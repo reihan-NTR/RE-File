@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RE:File | Berbagi dengan mudah</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .navbar { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .logo { font-size: 1.5rem; font-weight: bold; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+        .nav-links { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+        .nav-links a { text-decoration: none; padding: 0.5rem 1rem; border-radius: 50px; cursor: pointer; color: #4a5568; transition: all 0.3s; font-weight: 500; }
+        .nav-links a:hover { background: #667eea; color: white; transform: translateY(-2px); }
+        .btn-login { background: linear-gradient(135deg, #667eea, #764ba2); color: white !important; box-shadow: 0 2px 5px rgba(102,126,234,0.3); }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .hero { text-align: center; color: white; padding: 2rem 1rem; }
+        .hero h1 { font-size: 2.5rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .hero p { font-size: 1.1rem; opacity: 0.95; }
+
+        /* Search Bar */
+        .search-wrapper { background: white; border-radius: 60px; padding: 0.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.15); margin-bottom: 2rem; transition: all 0.3s; }
+        .search-wrapper:hover { box-shadow: 0 25px 50px rgba(0,0,0,0.2); transform: translateY(-2px); }
+        .search-container { display: flex; gap: 0.5rem; align-items: center; flex-wrap: nowrap; }
+        .search-input-group { flex: 3; display: flex; align-items: center; background: #f7fafc; border-radius: 50px; padding: 0 1rem; border: 2px solid #e2e8f0; transition: all 0.3s; }
+        .search-input-group:focus-within { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); background: white; }
+        .search-input-group i { color: #a0aec0; font-size: 1.1rem; }
+        .search-input { flex: 1; padding: 1rem 0.8rem; border: none; outline: none; font-size: 1rem; background: transparent; font-weight: 500; }
+        .filter-group { flex: 1; display: flex; gap: 0.5rem; }
+        .filter-select { flex: 1; padding: 0 1.2rem; border: 2px solid #e2e8f0; outline: none; border-radius: 50px; background: #f7fafc; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: #4a5568; transition: all 0.3s; height: 54px; }
+        .filter-select:hover { border-color: #667eea; background: white; }
+        .search-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0 2rem; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem; height: 54px; white-space: nowrap; }
+        .search-btn:hover { transform: scale(1.02); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
+        @media (max-width: 900px) { .search-container { flex-wrap: wrap; } .search-input-group { flex: 100%; width: 100%; } .filter-group { flex: 1; min-width: 150px; } .search-btn { flex: 0.5; justify-content: center; } }
+        @media (max-width: 600px) { .filter-group { flex-wrap: wrap; width: 100%; } .filter-select { width: 100%; } .search-btn { width: 100%; justify-content: center; } }
+
+        /* Stats Cards */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 20px; padding: 1.2rem; text-align: center; color: white; transition: all 0.3s; border: 1px solid rgba(255,255,255,0.2); }
+        .stat-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.25); }
+        .stat-number { font-size: 2rem; font-weight: 800; }
+        .stat-label { font-size: 0.85rem; opacity: 0.9; margin-top: 0.3rem; }
+
+        /* Category Pills */
+        .categories-wrapper { margin-bottom: 2rem; overflow-x: auto; white-space: nowrap; padding-bottom: 0.5rem; }
+        .categories { display: inline-flex; gap: 0.8rem; }
+        .category-pill { background: rgba(255,255,255,0.2); color: white; padding: 0.6rem 1.5rem; border-radius: 50px; cursor: pointer; transition: all 0.3s; font-size: 0.9rem; font-weight: 500; backdrop-filter: blur(5px); display: inline-flex; align-items: center; gap: 0.5rem; }
+        .category-pill:hover, .category-pill.active { background: white; color: #667eea; transform: translateY(-2px); }
+
+        /* Files Grid */
+        .files-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem; }
+        .file-card { background: white; border-radius: 20px; padding: 1.5rem; transition: all 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .file-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .file-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+        .file-icon { width: 55px; height: 55px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white; }
+        .file-name { font-weight: 700; font-size: 1rem; word-break: break-all; flex: 1; color: #2d3748; }
+        .file-description { font-size: 0.85rem; color: #718096; background: #f7fafc; padding: 0.6rem; border-radius: 12px; margin: 0.5rem 0; line-height: 1.4; }
+        .file-meta { display: flex; gap: 1rem; font-size: 0.75rem; color: #718096; margin: 0.8rem 0; padding: 0.5rem 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
+        .file-meta span { display: flex; align-items: center; gap: 0.3rem; }
+        .file-actions { display: flex; gap: 0.5rem; }
+        .download-btn { flex: 2; padding: 0.7rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+        .download-btn:hover { transform: scale(1.02); }
+        .edit-btn { flex: 1; padding: 0.7rem; background: #4299e1; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; }
+        .delete-btn { flex: 1; padding: 0.7rem; background: #f56565; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; }
+        .report-btn { flex: 1; padding: 0.7rem; background: #ed8936; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; }
+
+        /* Floating Button */
+        .fab { position: fixed; bottom: 2rem; right: 2rem; width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 25px rgba(0,0,0,0.3); border: none; font-size: 1.5rem; z-index: 100; transition: all 0.3s; }
+        .fab:hover { transform: scale(1.1) rotate(90deg); }
+
+        /* Modals */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-content { background: white; border-radius: 30px; max-width: 500px; width: 90%; padding: 2rem; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .modal-header h3 { font-size: 1.5rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .close-modal { cursor: pointer; font-size: 1.5rem; transition: all 0.3s; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .close-modal:hover { background: #f0f0f0; transform: rotate(90deg); }
+        .form-group { margin-bottom: 1rem; }
+        input, textarea, select { width: 100%; padding: 0.8rem 1rem; border: 2px solid #e2e8f0; border-radius: 12px; font-family: inherit; transition: all 0.3s; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+        .upload-area { border: 2px dashed #cbd5e0; border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s; background: #f7fafc; }
+        .upload-area:hover { border-color: #667eea; background: #edf2f7; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0.8rem; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.3s; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
+        .toggle-buttons { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+        .toggle-btn { flex: 1; padding: 0.6rem; border: none; border-radius: 50px; cursor: pointer; background: #e2e8f0; transition: all 0.3s; font-weight: 500; }
+        .toggle-btn.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .loading { text-align: center; padding: 3rem; color: white; }
+        .spinner { width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: white; padding: 0.8rem 1.5rem; border-radius: 50px; display: none; z-index: 3000; box-shadow: 0 10px 30px rgba(0,0,0,0.2); font-weight: 500; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        .empty-state { text-align: center; padding: 4rem; background: white; border-radius: 30px; color: #a0aec0; }
+        .owner-badge { background: #48bb78; color: white; font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 50px; margin-left: 0.5rem; }
+        .admin-tabs { background: white; border-radius: 20px; padding: 0.5rem; margin-bottom: 2rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .admin-tab { flex: 1; padding: 1rem; border: none; border-radius: 15px; cursor: pointer;  background: linear-gradient(135deg, #667eea, #764ba2);color: white; transition: all 0.3s; font-weight: 600; }
+        .admin-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .queue-card, .report-card { background: white; border-radius: 20px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 4px solid #ed8936; }
+        @media (max-width: 768px) { .container { padding: 1rem; } .stats-grid { grid-template-columns: repeat(2, 1fr); } .files-grid { grid-template-columns: 1fr; } .fab { width: 55px; height: 55px; bottom: 1rem; right: 1rem; } }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo" onclick="loadFiles()"><i class="fas fa-cloud-upload-alt"></i> RE:File</div>
+    <div class="nav-links">
+        <a onclick="showMyUploads()" id="myUploadsLink" style="display:none;"><i class="fas fa-folder-open"></i> Upload Saya</a>
+        <a onclick="showAdminPanel()" id="adminPanelLink" style="display:none;"><i class="fas fa-shield-alt"></i> Admin Panel</a>
+        <a onclick="showLoginModal()" id="loginLink" class="btn-login"><i class="fas fa-sign-in-alt"></i> Login</a>
+        <a onclick="logout()" id="logoutLink" style="display:none;"><i class="fas fa-user-circle"></i> <span id="usernameDisplay"></span> <i class="fas fa-sign-out-alt"></i></a>
+    </div>
+</nav>
+
+<button class="fab" onclick="handleUploadClick()"><i class="fas fa-plus"></i></button>
+
+<div class="container">
+    <div class="hero" id="heroSection">
+        <h1><i class="fas fa-share-alt"></i> Bagikan & Unduh File</h1>
+    </div>
+
+    <div class="search-wrapper">
+        <div class="search-container">
+            <div class="search-input-group">
+                <i class="fas fa-search"></i>
+                <input type="text" class="search-input" id="searchInput" placeholder="Cari file berdasarkan nama atau deskripsi..." onkeyup="searchFiles()">
+            </div>
+            <div class="filter-group">
+                <select class="filter-select" id="categoryFilter" onchange="searchFiles()">
+                    <option value="all">📁 Kategori</option>
+                    <option value="Document">📄 Dokumen</option>
+                    <option value="Image">🖼️ Gambar</option>
+                    <option value="Video">🎬 Video</option>
+                    <option value="Software">⚙️ Software</option>
+                    <option value="Other">📦 Lainnya</option>
+                </select>
+                <select class="filter-select" id="sortFilter" onchange="searchFiles()">
+                    <option value="latest">🕐 Terbaru</option>
+                    <option value="downloads">🔥 Terpopuler</option>
+                </select>
+            </div>
+            <button class="search-btn" onclick="searchFiles()"><i class="fas fa-search"></i> Cari</button>
+        </div>
+    </div>
+
+    <div id="adminPanel" style="display:none;">
+        <div class="admin-tabs">
+            <button class="admin-tab active" onclick="showPendingQueue()"><i class="fas fa-clock"></i> Verifikasi Upload</button>
+            <button class="admin-tab" onclick="showReportsList()"><i class="fas fa-flag"></i> Laporan User</button>
+            <button class="admin-tab" onclick="manualBackup()" style="background:#48bb78; color:white;"><i class="fas fa-database"></i> Backup Sekarang</button>
+        </div>
+        <div id="adminContent"></div>
+    </div>
+
+    <div id="publicSection">
+        <div class="stats-grid">
+            <div class="stat-card"><div class="stat-number" id="totalFiles">0</div><div class="stat-label">Total File</div></div>
+            <div class="stat-card"><div class="stat-number" id="totalDownloads">0</div><div class="stat-label">Total Download</div></div>
+            <div class="stat-card"><div class="stat-number" id="totalUsers">0</div><div class="stat-label">Pengguna</div></div>
+        </div>
+
+        <div class="categories-wrapper">
+            <div class="categories" id="categoriesContainer">
+                <div class="category-pill active" data-category="all" onclick="filterByCategory('all')"><i class="fas fa-layer-group"></i> Semua</div>
+            </div>
+        </div>
+
+        <div id="filesContainer"><div class="loading"><div class="spinner"></div><p>Memuat file...</p></div></div>
+    </div>
+</div>
+
+<!-- Login Modal -->
+<div id="loginModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h3><i class="fas fa-user-circle"></i> Selamat Datang!</h3><span class="close-modal" onclick="closeModal('loginModal')">&times;</span></div>
+        <div class="toggle-buttons"><button class="toggle-btn active" onclick="showLoginForm()">Login</button><button class="toggle-btn" onclick="showRegisterForm()">Daftar</button></div>
+        <div id="loginFormDiv">
+            <div class="form-group"><input type="text" id="loginUsername" placeholder="Username"></div>
+            <div class="form-group"><input type="password" id="loginPassword" placeholder="Password"></div>
+            <button class="btn-primary" onclick="login()"><i class="fas fa-sign-in-alt"></i> Login</button>
+        </div>
+        <div id="registerFormDiv" style="display:none;">
+            <div class="form-group"><input type="text" id="regUsername" placeholder="Username"></div>
+            <div class="form-group"><input type="email" id="regEmail" placeholder="Email"></div>
+            <div class="form-group"><input type="password" id="regPassword" placeholder="Password (min 6)"></div>
+            <button class="btn-primary" onclick="register()"><i class="fas fa-user-plus"></i> Daftar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div id="uploadModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h3><i class="fas fa-cloud-upload-alt"></i> Upload File</h3><span class="close-modal" onclick="closeModal('uploadModal')">&times;</span></div>
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color:#667eea;"></i>
+            <p>Klik untuk pilih file</p>
+            <small style="color:#718096;">Tanpa batasan ukuran! 🚀</small>
+        </div>
+        <input type="file" id="fileInput" style="display:none" onchange="showFileName()">
+        <div id="fileNameDisplay" style="margin:0.5rem 0; text-align:center; font-size:0.85rem; color:#48bb78;"></div>
+        <div class="form-group"><textarea id="fileDesc" placeholder="Deskripsi file (opsional)" rows="3"></textarea></div>
+        <div class="form-group">
+            <select id="fileCat">
+                <option value="Document">📄 Dokumen</option><option value="Image">🖼️ Gambar</option>
+                <option value="Video">🎬 Video</option><option value="Software">⚙️ Software</option><option value="Other">📦 Lainnya</option>
+            </select>
+        </div>
+        <button class="btn-primary" onclick="uploadFile()"><i class="fas fa-paper-plane"></i> Kirim untuk Verifikasi</button>
+        <p style="font-size:0.7rem; text-align:center; margin-top:0.5rem; color:#718096;">File akan diverifikasi oleh admin sebelum dipublikasikan</p>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h3><i class="fas fa-edit"></i> Edit Deskripsi File</h3><span class="close-modal" onclick="closeModal('editModal')">&times;</span></div>
+        <div id="editFileInfo" style="margin-bottom:1rem;"></div>
+        <div class="form-group"><textarea id="editDescription" rows="3" placeholder="Deskripsi baru..."></textarea></div>
+        <div class="form-group">
+            <select id="editCategory">
+                <option value="Document">📄 Dokumen</option><option value="Image">🖼️ Gambar</option>
+                <option value="Video">🎬 Video</option><option value="Software">⚙️ Software</option><option value="Other">📦 Lainnya</option>
+            </select>
+        </div>
+        <button class="btn-primary" onclick="saveEdit()"><i class="fas fa-save"></i> Simpan Perubahan</button>
+    </div>
+</div>
+
+<!-- Report Modal -->
+<div id="reportModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h3><i class="fas fa-flag"></i> Laporkan File</h3><span class="close-modal" onclick="closeModal('reportModal')">&times;</span></div>
+        <div id="reportFileInfo" style="margin-bottom:1rem;"></div>
+        <div class="form-group">
+            <select id="reportReason">
+                <option>Konten tidak pantas</option><option>Melanggar hak cipta</option>
+                <option>File berbahaya/virus</option><option>Konten spam</option><option>Lainnya</option>
+            </select>
+        </div>
+        <div class="form-group"><textarea id="reportDescription" placeholder="Detail laporan (opsional)" rows="3"></textarea></div>
+        <button class="btn-primary" onclick="submitReport()"><i class="fas fa-paper-plane"></i> Kirim Laporan</button>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+    // ============ CONFIGURATION ============
+    const API_BASE = '';
+    let token = localStorage.getItem('token');
+    let currentUser = null;
+    let currentEditFileId = null;
+    let currentReportFileId = null;
+    let socket = null;
+
+    // ============ SOCKET.IO REAL-TIME ============
+    function initSocket() {
+        if (socket) return;
+        
+        socket = io({
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionAttempts: 5
+        });
+        
+        socket.on('connect', () => {
+            console.log('🔌 Real-time connected');
+            if (currentUser && currentUser.id) {
+                socket.emit('register-user', currentUser.id);
+            }
+        });
+        
+        socket.on('new-file', (file) => {
+            console.log('📢 New file real-time:', file.original_name);
+            showToast(`📢 File baru: ${file.original_name} telah ditambahkan!`);
+            refreshFiles();
+        });
+        
+        socket.on('file-deleted', (fileId) => {
+            console.log('📢 File deleted real-time:', fileId);
+            showToast(`🗑️ Sebuah file telah dihapus`);
+            refreshFiles();
+        });
+        
+        socket.on('file-updated', (data) => {
+            console.log('📢 File updated real-time:', data.id);
+            refreshFiles();
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('🔌 Real-time disconnected');
+        });
+        
+        socket.on('connect_error', (err) => {
+            console.log('Socket connection error:', err.message);
+        });
+    }
+
+    function refreshFiles() {
+        loadFiles();
+        loadStats();
+    }
+
+    // ============ HELPER FUNCTIONS ============
+    function showToast(msg, isError = false) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        toast.style.background = isError ? '#f56565' : 'white';
+        toast.style.color = isError ? 'white' : '#333';
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    function formatFileSize(bytes) {
+        if (!bytes) return '0 B';
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function getFileIcon(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const icons = { pdf: '📄', jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️', mp4: '🎬', mkv: '🎬', avi: '🎬', zip: '📦', rar: '📦', exe: '⚙️', doc: '📝', docx: '📝', txt: '📝' };
+        return icons[ext] || '📁';
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function getCategoryIcon(category) {
+        const icons = { Document: '📄', Image: '🖼️', Video: '🎬', Software: '⚙️', Other: '📦' };
+        return icons[category] || '📁';
+    }
+
+    // ============ API CALLS ============
+    async function apiCall(url, options = {}) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const response = await fetch(API_BASE + url, { ...options, headers });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Terjadi kesalahan');
+        return data;
+    }
+
+    // ============ AUTH FUNCTIONS ============
+    function updateUI() {
+        currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+        const loginLink = document.getElementById('loginLink');
+        const logoutLink = document.getElementById('logoutLink');
+        const myUploadsLink = document.getElementById('myUploadsLink');
+        const adminPanelLink = document.getElementById('adminPanelLink');
+        const usernameDisplay = document.getElementById('usernameDisplay');
+        
+        if (currentUser) {
+            loginLink.style.display = 'none';
+            logoutLink.style.display = 'inline';
+            myUploadsLink.style.display = 'inline';
+            usernameDisplay.textContent = currentUser.username;
+            adminPanelLink.style.display = currentUser.role === 'admin' ? 'inline' : 'none';
+            if (socket && socket.connected && currentUser.id) {
+                socket.emit('register-user', currentUser.id);
+            }
+        } else {
+            loginLink.style.display = 'inline';
+            logoutLink.style.display = 'none';
+            myUploadsLink.style.display = 'none';
+            adminPanelLink.style.display = 'none';
+        }
+    }
+
+    async function login() {
+        const username = document.getElementById('loginUsername').value;
+        const password = document.getElementById('loginPassword').value;
+        if (!username || !password) { showToast('Isi username dan password', true); return; }
+        
+        try {
+            const response = await fetch(API_BASE + '/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+            
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            token = data.token;
+            currentUser = data.user;
+            
+            updateUI();
+            closeModal('loginModal');
+            showToast(`Selamat datang, ${username}!`);
+            loadFiles();
+            loadStats();
+            
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+        } catch (err) { showToast(err.message, true); }
+    }
+
+    async function register() {
+        const username = document.getElementById('regUsername').value;
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPassword').value;
+        
+        if (!username || !email || !password) { showToast('Semua field harus diisi', true); return; }
+        if (password.length < 6) { showToast('Password minimal 6 karakter', true); return; }
+        
+        try {
+            const response = await fetch(API_BASE + '/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+            
+            showToast('Registrasi berhasil! Silakan login.');
+            showLoginForm();
+            
+            document.getElementById('regUsername').value = '';
+            document.getElementById('regEmail').value = '';
+            document.getElementById('regPassword').value = '';
+        } catch (err) { showToast(err.message, true); }
+    }
+
+    function logout() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        token = null;
+        currentUser = null;
+        updateUI();
+        showHome();
+        showToast('Logout berhasil');
+    }
+
+    function showHome() {
+        document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('publicSection').style.display = 'block';
+        document.getElementById('heroSection').style.display = 'block';
+        loadFiles();
+        loadStats();
+    }
+
+    // ============ FILE FUNCTIONS ============
+    async function loadFiles() {
+        const search = document.getElementById('searchInput').value;
+        const category = document.getElementById('categoryFilter').value;
+        const sort = document.getElementById('sortFilter').value;
+        
+        try {
+            const response = await fetch(API_BASE + `/api/files?search=${encodeURIComponent(search)}&category=${category}&sort=${sort}`);
+            const data = await response.json();
+            document.getElementById('totalFiles').textContent = data.total_files || 0;
+            displayFiles(data.files || []);
+            updateCategories(data.files || []);
+        } catch (err) { 
+            document.getElementById('filesContainer').innerHTML = '<div class="empty-state">❌ Gagal memuat file</div>';
+        }
+    }
+
+    async function loadStats() {
+        try {
+            const response = await fetch(API_BASE + '/api/stats');
+            const data = await response.json();
+            document.getElementById('totalDownloads').textContent = data.total_downloads || 0;
+            document.getElementById('totalUsers').textContent = data.total_users || 0;
+        } catch (err) {}
+    }
+
+    function displayFiles(files) {
+        const container = document.getElementById('filesContainer');
+        if (files.length === 0) { 
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h3>Belum Ada File</h3><p>Jadilah yang pertama upload!</p></div>'; 
+            return; 
+        }
+        
+        container.innerHTML = `<div class="files-grid">${files.map(file => {
+            const isOwner = currentUser && file.uploaded_by === currentUser.id;
+            return `
+                <div class="file-card">
+                    <div class="file-header">
+                        <div class="file-icon">${getFileIcon(file.original_name)}</div>
+                        <div class="file-name">${escapeHtml(file.original_name)}${isOwner ? '<span class="owner-badge"><i class="fas fa-user-check"></i> File Saya</span>' : ''}</div>
+                    </div>
+                    ${file.description ? `<div class="file-description"><i class="fas fa-align-left"></i> ${escapeHtml(file.description)}</div>` : ''}
+                    <div class="file-meta">
+                        <span><i class="fas fa-database"></i> ${formatFileSize(file.size)}</span>
+                        <span><i class="fas fa-download"></i> ${file.download_count || 0}</span>
+                        <span><i class="fas fa-calendar"></i> ${new Date(file.uploaded_at).toLocaleDateString()}</span>
+                        <span><i class="fas fa-user"></i> ${escapeHtml(file.uploader_name || 'Unknown')}</span>
+                    </div>
+                    <div class="file-actions">
+                        <button class="download-btn" onclick="downloadFile('${file.id}')"><i class="fas fa-download"></i> Download</button>
+                        ${isOwner ? `
+                            <button class="edit-btn" onclick="openEditModal('${file.id}', '${escapeHtml(file.original_name)}', '${escapeHtml(file.description || '')}', '${file.category}')"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="delete-btn" onclick="deleteOwnFile('${file.id}')"><i class="fas fa-trash"></i> Hapus</button>
+                        ` : `<button class="report-btn" onclick="showReportModal('${file.id}', '${escapeHtml(file.original_name)}')"><i class="fas fa-flag"></i> Report</button>`}
+                    </div>
+                </div>
+            `;
+        }).join('')}</div>`;
+    }
+
+    function updateCategories(files) {
+        const categories = [...new Set(files.map(f => f.category).filter(c => c))];
+        const container = document.getElementById('categoriesContainer');
+        const currentCategory = document.getElementById('categoryFilter').value;
+        
+        container.innerHTML = `<div class="category-pill ${currentCategory === 'all' ? 'active' : ''}" data-category="all" onclick="filterByCategory('all')"><i class="fas fa-layer-group"></i> Semua (${files.length})</div>`;
+        
+        categories.forEach(cat => {
+            const count = files.filter(f => f.category === cat).length;
+            container.innerHTML += `<div class="category-pill ${currentCategory === cat ? 'active' : ''}" data-category="${cat}" onclick="filterByCategory('${cat}')">${getCategoryIcon(cat)} ${cat} (${count})</div>`;
+        });
+    }
+
+    function filterByCategory(category) {
+        document.getElementById('categoryFilter').value = category;
+        searchFiles();
+        document.querySelectorAll('.category-pill').forEach(pill => {
+            pill.classList.remove('active');
+            if (pill.getAttribute('data-category') === category) pill.classList.add('active');
+        });
+    }
+
+    async function downloadFile(fileId) {
+        try {
+            await fetch(API_BASE + `/api/download/${fileId}`, { method: 'POST' });
+            window.open(API_BASE + `/api/download/${fileId}`, '_blank');
+            showToast('Download dimulai!');
+        } catch (err) { showToast('Gagal download', true); }
+    }
+
+    function searchFiles() { loadFiles(); }
+
+    // ============ UPLOAD FUNCTIONS ============
+    function handleUploadClick() {
+        if (!currentUser) { showToast('Silakan login terlebih dahulu', true); showLoginModal(); }
+        else document.getElementById('uploadModal').style.display = 'flex';
+    }
+
+    function showFileName() {
+        const file = document.getElementById('fileInput').files[0];
+        if (file) document.getElementById('fileNameDisplay').innerHTML = `<i class="fas fa-check-circle"></i> ${file.name} (${formatFileSize(file.size)})`;
+    }
+
+    async function uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        if (!fileInput.files || !fileInput.files[0]) { showToast('Pilih file terlebih dahulu', true); return; }
+        
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('description', document.getElementById('fileDesc').value);
+        formData.append('category', document.getElementById('fileCat').value);
+        
+        try {
+            const response = await fetch(API_BASE + '/api/upload/submit', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+            
+            showToast('✅ File dikirim untuk verifikasi!');
+            closeModal('uploadModal');
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileDesc').value = '';
+            document.getElementById('fileNameDisplay').innerHTML = '';
+        } catch (err) { showToast(err.message, true); }
+    }
+
+    // ============ EDIT & DELETE (DIPERBAIKI) ============
+    function openEditModal(fileId, fileName, description, category) {
+        console.log('Opening edit modal for:', fileId, fileName);
+        currentEditFileId = fileId;
+        document.getElementById('editFileInfo').innerHTML = `<strong>📄 ${fileName}</strong>`;
+        document.getElementById('editDescription').value = description;
+        document.getElementById('editCategory').value = category;
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    async function saveEdit() {
+        if (!currentEditFileId) {
+            showToast('Error: No file selected', true);
+            return;
+        }
+        
+        const newDescription = document.getElementById('editDescription').value;
+        const newCategory = document.getElementById('editCategory').value;
+        
+        try {
+            const response = await fetch(API_BASE + `/api/file/${currentEditFileId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    description: newDescription,
+                    category: newCategory
+                })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+            
+            showToast('✅ File berhasil diupdate!');
+            closeModal('editModal');
+            loadFiles(); // Refresh daftar file
+            currentEditFileId = null;
+        } catch (err) { 
+            showToast(err.message, true); 
+        }
+    }
+
+    async function deleteOwnFile(fileId) {
+        if (!confirm('Yakin ingin menghapus file ini? Tindakan ini tidak bisa dibatalkan.')) return;
+        
+        try {
+            const response = await fetch(API_BASE + `/api/file/${fileId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+            
+            showToast('✅ File berhasil dihapus!');
+            loadFiles();
+        } catch (err) { 
+            showToast(err.message, true); 
+        }
+    }
+
+    // ============ REPORT ============
+    function showReportModal(fileId, fileName) {
+        if (!currentUser) { showToast('Login dulu untuk melaporkan file', true); showLoginModal(); return; }
+        currentReportFileId = fileId;
+        document.getElementById('reportFileInfo').innerHTML = `<strong>📄 ${fileName}</strong>`;
+        document.getElementById('reportModal').style.display = 'flex';
+    }
+
+    async function submitReport() {
+        try {
+            await apiCall('/api/report', {
+                method: 'POST',
+                body: JSON.stringify({
+                    file_id: currentReportFileId,
+                    reason: document.getElementById('reportReason').value,
+                    description: document.getElementById('reportDescription').value
+                })
+            });
+            showToast('✅ Laporan terkirim! Admin akan menindaklanjuti.');
+            closeModal('reportModal');
+            document.getElementById('reportDescription').value = '';
+        } catch (err) { showToast(err.message, true); }
+    }
+
+    // ============ MY UPLOADS (DIPERBAIKI) ============
+    async function showMyUploads() {
+        if (!currentUser) { showToast('Login dulu', true); showLoginModal(); return; }
+        
+        try {
+            const data = await apiCall('/api/upload/my-uploads');
+            let html = '<div style="max-height:70vh; overflow-y:auto;">';
+            
+            // File menunggu verifikasi (hanya yang status pending)
+            const pendingQueues = data.queues.filter(q => q.status === 'pending');
+            html += '<h4><i class="fas fa-clock"></i> Menunggu Verifikasi</h4>';
+            if (pendingQueues.length === 0) {
+                html += '<p style="color:#718096;">Tidak ada file dalam antrean</p>';
+            } else {
+                html += pendingQueues.map(q => `
+                    <div style="background:#fef5e7; padding:1rem; margin-bottom:0.5rem; border-radius:10px;">
+                        <strong>${escapeHtml(q.original_name)}</strong>
+                        ${q.description ? `<br><small>📝 ${escapeHtml(q.description)}</small>` : ''}
+                        <br><small>📦 ${formatFileSize(q.file_size)} | 📅 ${new Date(q.submitted_at).toLocaleString()}</small>
+                        <br><span style="color:#ed8936;">⏳ Menunggu verifikasi admin</span>
+                    </div>
+                `).join('');
+            }
+            
+            // File yang sudah disetujui
+            html += '<h4 style="margin-top:1.5rem;"><i class="fas fa-check-circle"></i> File Saya yang Disetujui</h4>';
+            if (data.approved.length === 0) {
+                html += '<p style="color:#718096;">Belum ada file yang disetujui</p>';
+            } else {
+                html += data.approved.map(f => `
+                    <div style="background:#e6f7e6; padding:1rem; margin-bottom:0.5rem; border-radius:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:start; flex-wrap:wrap; gap:0.5rem;">
+                            <div style="flex:1;">
+                                <strong>${escapeHtml(f.original_name)}</strong>
+                                ${f.description ? `<br><small>📝 ${escapeHtml(f.description)}</small>` : ''}
+                                <br><small>📦 ${formatFileSize(f.size)} | ⬇️ ${f.download_count} downloads</small>
+                            </div>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button class="edit-btn" style="padding:0.3rem 0.8rem; font-size:0.7rem;" onclick="openEditModalFromUploads('${f.id}', '${escapeHtml(f.original_name)}', '${escapeHtml(f.description || '')}', '${f.category}')">✏️ Edit</button>
+                                <button class="delete-btn" style="padding:0.3rem 0.8rem; font-size:0.7rem;" onclick="deleteOwnFile('${f.id}')">🗑️ Hapus</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            // File yang ditolak
+            html += '<h4 style="margin-top:1.5rem;"><i class="fas fa-times-circle"></i> File Ditolak</h4>';
+            if (data.rejected.length === 0) {
+                html += '<p style="color:#718096;">Tidak ada file yang ditolak</p>';
+            } else {
+                html += data.rejected.map(r => `
+                    <div style="background:#fee; padding:1rem; margin-bottom:0.5rem; border-radius:10px;">
+                        <strong>${escapeHtml(r.original_name)}</strong>
+                        ${r.description ? `<br><small>📝 ${escapeHtml(r.description)}</small>` : ''}
+                        <br><small>📦 ${formatFileSize(r.file_size)}</small>
+                        <br><span style="color:#f56565;">❌ Alasan: ${escapeHtml(r.reject_reason)}</span>
+                    </div>
+                `).join('');
+            }
+            
+            html += '</div>';
+            
+            // Hapus modal yang sudah ada sebelumnya
+            const existingModal = document.querySelector('.modal:not(#loginModal):not(#uploadModal):not(#editModal):not(#reportModal)');
+            if (existingModal) existingModal.remove();
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'flex';
+            modal.innerHTML = `<div class="modal-content" style="max-width:600px;"><div class="modal-header"><h3><i class="fas fa-folder-open"></i> Upload Saya</h3><span class="close-modal" onclick="this.closest(\'.modal\').remove()">&times;</span></div>${html}</div>`;
+            document.body.appendChild(modal);
+        } catch (err) { 
+            showToast('Gagal memuat data: ' + err.message, true); 
+        }
+    }
+
+    function openEditModalFromUploads(fileId, fileName, description, category) {
+        // Tutup modal Upload Saya terlebih dahulu
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(m => {
+            if (m.id !== 'editModal' && m.id !== 'reportModal' && m.id !== 'loginModal' && m.id !== 'uploadModal') {
+                m.remove();
+            }
+        });
+        openEditModal(fileId, fileName, description, category);
+    }
+
+    // ============ ADMIN FUNCTIONS ============
+    async function showAdminPanel() {
+        if (!currentUser || currentUser.role !== 'admin') { showToast('Akses admin diperlukan', true); return; }
+        document.getElementById('adminPanel').style.display = 'block';
+        document.getElementById('publicSection').style.display = 'none';
+        document.getElementById('heroSection').style.display = 'none';
+        showPendingQueue();
+    }
+
+    async function showPendingQueue() {
+        try {
+            const data = await apiCall('/api/admin/queue');
+            const container = document.getElementById('adminContent');
+            
+            if (data.queues.length === 0) { 
+                container.innerHTML = '<div class="empty-state">✅ Tidak ada file menunggu verifikasi</div>'; 
+                return; 
+            }
+            
+            container.innerHTML = `<div>${data.queues.map(q => `
+                <div class="queue-card">
+                    <div class="file-header">
+                        <div class="file-icon">${getFileIcon(q.original_name)}</div>
+                        <div><strong>${escapeHtml(q.original_name)}</strong><br><small>👤 ${escapeHtml(q.uploader_name)} | 📦 ${formatFileSize(q.file_size)}</small></div>
+                    </div>
+                    ${q.description ? `<div class="file-description">📝 ${escapeHtml(q.description)}</div>` : ''}
+                    <div class="file-actions">
+                        <button class="download-btn" onclick="approveFile(${q.id})">✅ Setujui</button>
+                        <button class="delete-btn" onclick="rejectFile(${q.id})">❌ Tolak</button>
+                    </div>
+                </div>
+            `).join('')}</div>`;
+            
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+        } catch (err) { showToast(err.message, true); }
+    }
+
+    async function approveFile(queueId) {
+        try { 
+            await apiCall(`/api/admin/approve/${queueId}`, { method: 'POST' }); 
+            showToast('✅ File disetujui!'); 
+            showPendingQueue();
+            // Refresh data di "Upload Saya" jika terbuka
+            refreshFiles();
+        } catch (err) { showToast(err.message, true); }
+    }
+
+    async function rejectFile(queueId) {
+        if (!confirm('Tolak file ini?')) return;
+        try { 
+            await apiCall(`/api/admin/reject/${queueId}`, { method: 'POST', body: JSON.stringify({ reason: 'Ditolak oleh admin' }) }); 
+            showToast('❌ File ditolak'); 
+            showPendingQueue(); 
+            refreshFiles();
+        } catch (err) { showToast(err.message, true); }
+    }
+
+    async function showReportsList() {
+        try {
+            const data = await apiCall('/api/admin/reports');
+            const container = document.getElementById('adminContent');
+            
+            if (data.reports.length === 0) { 
+                container.innerHTML = '<div class="empty-state">🚩 Tidak ada laporan dari user</div>'; 
+                return; 
+            }
+            
+            container.innerHTML = `<div>${data.reports.map(r => `
+                <div class="report-card">
+                    <div>
+                        <strong>📄 ${escapeHtml(r.file_name || 'File sudah dihapus')}</strong><br>
+                        <small>👤 Dilaporkan oleh: ${escapeHtml(r.reporter_name)}</small><br>
+                        <strong>🚩 Alasan:</strong> ${escapeHtml(r.reason)}
+                    </div>
+                    <div class="file-actions" style="margin-top:1rem;">
+                        <button class="download-btn" onclick="deleteFileFromReport('${r.file_id}', '${r.id}')">🗑️ Hapus File</button>
+                        <button class="delete-btn" onclick="ignoreReport('${r.id}')">👁️ Abaikan</button>
+                    </div>
+                </div>
+            `).join('')}</div>`;
+            
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+        } catch (err) { showToast(err.message, true); }
+    }
+
+    async function deleteFileFromReport(fileId, reportId) {
+        if (!confirm('Hapus file ini?')) return;
+        try { 
+            await apiCall(`/api/admin/delete-file/${fileId}`, { method: 'POST' }); 
+            await apiCall(`/api/admin/ignore-report/${reportId}`, { method: 'POST' }); 
+            showToast('✅ File dihapus!'); 
+            showReportsList(); 
+            loadFiles(); 
+        } catch (err) { showToast(err.message, true); }
+    }
+
+    async function ignoreReport(reportId) {
+        try { 
+            await apiCall(`/api/admin/ignore-report/${reportId}`, { method: 'POST' }); 
+            showToast('Laporan diabaikan'); 
+            showReportsList(); 
+        } catch (err) { showToast(err.message, true); }
+    }
+
+    // ============ MODAL FUNCTIONS ============
+    function showLoginModal() { document.getElementById('loginModal').style.display = 'flex'; }
+    function closeModal(id) { 
+        const modal = document.getElementById(id);
+        if (modal) modal.style.display = 'none';
+    }
+    function showLoginForm() { 
+        document.getElementById('loginFormDiv').style.display = 'block'; 
+        document.getElementById('registerFormDiv').style.display = 'none'; 
+    }
+    function showRegisterForm() { 
+        document.getElementById('loginFormDiv').style.display = 'none'; 
+        document.getElementById('registerFormDiv').style.display = 'block'; 
+    }
+    
+    window.onclick = (e) => { 
+        if (e.target.classList.contains('modal')) e.target.style.display = 'none'; 
+    }
+
+    // ============ INITIALIZE ============
+    updateUI();
+    loadFiles();
+    loadStats();
+    initSocket();
+async function manualBackup() {
+    if (!confirm('Lakukan backup sekarang?')) return;
+    try {
+        const response = await fetch(API_BASE + '/api/admin/backup', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.success) {
+            showToast('✅ Backup berhasil! Data tersimpan di GitHub');
+        } else {
+            showToast('❌ Backup gagal: ' + data.error, true);
+        }
+    } catch (err) {
+        showToast('Error: ' + err.message, true);
+    }
+}
+</script>
+</body>
+</html>
