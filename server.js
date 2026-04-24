@@ -41,26 +41,68 @@ function writeDB(data) {
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
 }
 
-function initDatabase() {
-    const hashedPassword = bcrypt.hashSync('admin123', 10);
-    const initialData = {
-        users: [{
-            id: 1, username: 'admin', email: 'admin@fileshare.com',
-            password: hashedPassword, role: 'admin', created_at: new Date().toISOString()
-        }],
-        files: [],
-        upload_queue: [],
-        reports: [],
-        rejected_files: [],
-        next_id: { user: 2, queue: 1, report: 1 }
-    };
-    
-    if (!fs.existsSync(DB_PATH)) {
-        writeDB(initialData);
-        console.log('✅ Database created with admin user: admin / admin123');
-    }
+// ============ DATABASE (JSON) ============
+const DB_PATH = path.join(__dirname, 'database.json');
+const ADMIN_PATH = path.join(__dirname, 'admin.json');
+
+function readDB() {
+    if (!fs.existsSync(DB_PATH)) return { users: [], files: [], upload_queue: [], reports: [], rejected_files: [], next_id: { user: 2, queue: 1, report: 1 } };
+    const data = fs.readFileSync(DB_PATH, 'utf8');
+    return JSON.parse(data);
 }
 
+function writeDB(data) {
+    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+}
+
+// Load admin dari file terpisah (tidak akan hilang)
+function loadAdmin() {
+    if (fs.existsSync(ADMIN_PATH)) {
+        const adminData = fs.readFileSync(ADMIN_PATH, 'utf8');
+        return JSON.parse(adminData);
+    }
+    return null;
+}
+
+// Inisialisasi database (admin dari file terpisah)
+function initDatabase() {
+    const admin = loadAdmin();
+    
+    if (!fs.existsSync(DB_PATH)) {
+        const initialData = {
+            users: [],  // Admin akan ditambahkan dari admin.json
+            files: [],
+            upload_queue: [],
+            reports: [],
+            rejected_files: [],
+            next_id: { user: 2, queue: 1, report: 1 }
+        };
+        
+        // Tambahkan admin dari file terpisah
+        if (admin) {
+            initialData.users.push(admin);
+        }
+        
+        writeDB(initialData);
+        console.log('✅ Database created');
+    } else {
+        // Cek apakah admin ada di database.json
+        const db = readDB();
+        const adminExists = db.users.find(u => u.username === 'admin');
+        
+        if (!adminExists && admin) {
+            // Admin tidak ada, tambahkan dari admin.json
+            db.users.unshift(admin);
+            writeDB(db);
+            console.log('✅ Admin restored from admin.json');
+        }
+    }
+    
+    console.log('🔐 Admin user ready (from separate file)');
+    if (admin) {
+        console.log(`   Username: ${admin.username}`);
+    }
+}
 // ============ SOCKET.IO ============
 io.on('connection', (socket) => {
     console.log('🔌 Client connected:', socket.id);
@@ -456,90 +498,122 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 const GITHUB_REPO = process.env.GITHUB_REPO || '';
 const BACKUP_INTERVAL = 5 * 60 * 1000; // Backup setiap 5 menit
 
-// Fungsi untuk backup ke GitHub
 async function backupToGitHub() {
     console.log('📦 Starting backup to GitHub...');
     
-    if (!GITHUB_TOKEN || !GITHUB_REPO) {
-        console.log('⚠️ GITHUB_TOKEN or GITHUB_REPO not set, skipping backup');
-        return;
-    }
-    
     const dbPath = path.join(__dirname, 'database.json');
     if (!fs.existsSync(dbPath)) {
-        console.log('❌ database.json not found, skipping backup');
+        console.log('❌ database.json not found');
         return;
     }
     
-    try {
-        // Backup database.json
-        const commands = [
-            'git config user.name "Auto Backup Bot"',
-            'git config user.email "backup@fileshare.local"',
-            `git remote set-url origin https://${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git`,
-            'git pull origin main --no-rebase --allow-unrelated-histories || true',
-            'git add database.json',
-            `git commit -m "Auto backup: ${new Date().toLocaleString()}" || echo "No changes to commit"`,
-            'git push origin main'
-        ];
-        
-        for (const cmd of commands) {
-            await new Promise((resolve) => {
-                exec(cmd, { cwd: __dirname }, (error, stdout, stderr) => {
-                    if (error && !cmd.includes('||')) {
-                        console.log(`Command failed: ${cmd}`);
-                    } else {
-                        if (stdout) console.log(stdout.substring(0, 200));
-                    }
-                    resolve();
-                });
-            });
-        }
-        
-        console.log('✅ Backup completed!');
-    } catch (error) {
-        console.log('❌ Backup failed:', error.message);
-    }
-}
-
-// Fungsi untuk restore dari backup
-async function restoreFromBackup() {
-    console.log('🔄 Checking for backup to restore...');
+    const db = readDB();
     
-    if (!GITHUB_TOKEN || !GITHUB_REPO) {
-        console.log('⚠️ GitHub credentials not set, skipping restore');
-        return false;
-    }
+    // Backup database.json (admin tidak perlu karena ada di admin.json)
+    // Tapi tetap backup data user dan file
+    const backupData = {
+        users: db.users.filter(u => u.username !== 'admin'), // Admin tidak perlu di backup
+        files: db.files,
+        upload_queue: db.upload_queue,
+        reports: db.reports,
+        rejected_files: db.rejected_files,
+        next_id: db.next_id
+    };
     
-    const dbPath = path.join(__dirname, 'database.json');
+    const backupContent = JSON.stringify(backupData, null, 2);
+    fs.writeFileSync(dbPath, backupContent);
     
-    try {
-        // Pull latest database.json dari GitHub
+    const { exec } = require('child_process');
+    
+    const commands = [
+        'git config user.name "Auto Backup Bot"',
+        'git config user.email "backup@fileshare.local"',
+        `git add database.json`,
+        `git commit -m "Auto backup: ${new Date().toLocaleString()}" || echo "No changes"`,
+        'git push origin main'
+    ];
+    
+    for (const cmd of commands) {
         await new Promise((resolve) => {
-            exec(`git pull origin main`, { cwd: __dirname }, (error) => {
+            exec(cmd, { cwd: __dirname }, (error, stdout) => {
+                if (error && !cmd.includes('||')) {
+                    console.log(`Error: ${error.message}`);
+                } else if (stdout) {
+                    console.log(stdout.substring(0, 200));
+                }
                 resolve();
             });
         });
-        
-        // Cek apakah database.json ada dan memiliki data
-        if (fs.existsSync(dbPath)) {
-            const dbData = fs.readFileSync(dbPath, 'utf8');
-            const db = JSON.parse(dbData);
-            
-            // Jika hanya ada admin (1 user) dan tidak ada file, skip restore
-            if (db.users && db.users.length <= 1 && db.files.length === 0) {
-                console.log('No meaningful data in backup, skipping restore');
-                return false;
-            }
-            
-            console.log(`✅ Restored from backup: ${db.users.length} users, ${db.files.length} files`);
-            return true;
-        }
-    } catch (error) {
-        console.log('No backup found or restore failed');
     }
-    return false;
+    
+    console.log('✅ Backup completed!');
 }
+
+// Fungsi untuk restore dari backup (tidak mengganggu admin)
+async function restoreFromBackup() {
+    console.log('🔄 Checking for backup to restore...');
+    
+    const dbPath = path.join(__dirname, 'database.json');
+    const admin = loadAdmin();
+    
+    // Cek apakah database saat ini hanya berisi admin
+    let isDatabaseEmpty = true;
+    if (fs.existsSync(dbPath)) {
+        const currentDb = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+        // Jika hanya admin yang ada (admin dari file admin.json)
+        const onlyAdmin = currentDb.users.length === 1 && 
+                         currentDb.users[0].username === 'admin' &&
+                         currentDb.files.length === 0;
+        
+        if (onlyAdmin) {
+            isDatabaseEmpty = true;
+            console.log('Database has only admin, ready to restore');
+        } else {
+            isDatabaseEmpty = false;
+            console.log(`Database has ${currentDb.files.length} files, skipping restore`);
+        }
+    }
+    
+    if (!isDatabaseEmpty) {
+        return false;
+    }
+    
+    // Pull dari GitHub
+    const { exec } = require('child_process');
+    
+    return new Promise((resolve) => {
+        exec('git pull origin main --no-rebase', { cwd: __dirname }, (error, stdout, stderr) => {
+            if (error) {
+                console.log('Git pull error:', error.message);
+                resolve(false);
+            } else {
+                if (fs.existsSync(dbPath)) {
+                    const restoredDb = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
+                    
+                    // Pastikan admin tetap dari admin.json (bukan dari backup)
+                    if (admin) {
+                        // Hapus admin dari backup jika ada
+                        restoredDb.users = restoredDb.users.filter(u => u.username !== 'admin');
+                        restoredDb.users.unshift(admin);
+                    }
+                    
+                    // Tulis ulang database
+                    writeDB(restoredDb);
+                    
+                    if (restoredDb.files && restoredDb.files.length > 0) {
+                        console.log(`✅ Database restored! Found ${restoredDb.files.length} files`);
+                        resolve(true);
+                    } else {
+                        resolve(false);
+                    }
+                } else {
+                    resolve(false);
+                }
+            }
+        });
+    });
+}
+
 
 // Endpoint manual backup (hanya admin)
 app.post('/api/admin/backup', authenticate, requireAdmin, async (req, res) => {
