@@ -501,11 +501,6 @@ const BACKUP_INTERVAL = 5 * 60 * 1000; // Backup setiap 5 menit
 async function backupToGitHub() {
     console.log('📦 Starting backup to GitHub...');
     
-    const dbPath = path.join(__dirname, 'database.json');
-    if (!fs.existsSync(dbPath)) {
-        console.log('❌ database.json not found');
-        return;
-    }
     
     const db = readDB();
     
