@@ -448,6 +448,147 @@ app.use((req, res) => {
 
 // ============ START SERVER ============
 initDatabase();
+// ============ AUTO BACKUP TO GITHUB ============
+const { exec } = require('child_process');
+
+// Konfigurasi GitHub
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
+const GITHUB_REPO = process.env.GITHUB_REPO || '';
+const BACKUP_INTERVAL = 5 * 60 * 1000; // Backup setiap 5 menit
+
+// Fungsi untuk backup ke GitHub
+async function backupToGitHub() {
+    console.log('📦 Starting backup to GitHub...');
+    
+    if (!GITHUB_TOKEN || !GITHUB_REPO) {
+        console.log('⚠️ GITHUB_TOKEN or GITHUB_REPO not set, skipping backup');
+        return;
+    }
+    
+    const dbPath = path.join(__dirname, 'database.json');
+    if (!fs.existsSync(dbPath)) {
+        console.log('❌ database.json not found, skipping backup');
+        return;
+    }
+    
+    try {
+        // Backup database.json
+        const commands = [
+            'git config user.name "Auto Backup Bot"',
+            'git config user.email "backup@fileshare.local"',
+            `git remote set-url origin https://${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git`,
+            'git pull origin main --no-rebase --allow-unrelated-histories || true',
+            'git add database.json',
+            `git commit -m "Auto backup: ${new Date().toLocaleString()}" || echo "No changes to commit"`,
+            'git push origin main'
+        ];
+        
+        for (const cmd of commands) {
+            await new Promise((resolve) => {
+                exec(cmd, { cwd: __dirname }, (error, stdout, stderr) => {
+                    if (error && !cmd.includes('||')) {
+                        console.log(`Command failed: ${cmd}`);
+                    } else {
+                        if (stdout) console.log(stdout.substring(0, 200));
+                    }
+                    resolve();
+                });
+            });
+        }
+        
+        console.log('✅ Backup completed!');
+    } catch (error) {
+        console.log('❌ Backup failed:', error.message);
+    }
+}
+
+// Fungsi untuk restore dari backup
+async function restoreFromBackup() {
+    console.log('🔄 Checking for backup to restore...');
+    
+    if (!GITHUB_TOKEN || !GITHUB_REPO) {
+        console.log('⚠️ GitHub credentials not set, skipping restore');
+        return false;
+    }
+    
+    const dbPath = path.join(__dirname, 'database.json');
+    
+    try {
+        // Pull latest database.json dari GitHub
+        await new Promise((resolve) => {
+            exec(`git pull origin main`, { cwd: __dirname }, (error) => {
+                resolve();
+            });
+        });
+        
+        // Cek apakah database.json ada dan memiliki data
+        if (fs.existsSync(dbPath)) {
+            const dbData = fs.readFileSync(dbPath, 'utf8');
+            const db = JSON.parse(dbData);
+            
+            // Jika hanya ada admin (1 user) dan tidak ada file, skip restore
+            if (db.users && db.users.length <= 1 && db.files.length === 0) {
+                console.log('No meaningful data in backup, skipping restore');
+                return false;
+            }
+            
+            console.log(`✅ Restored from backup: ${db.users.length} users, ${db.files.length} files`);
+            return true;
+        }
+    } catch (error) {
+        console.log('No backup found or restore failed');
+    }
+    return false;
+}
+
+// Endpoint manual backup (hanya admin)
+app.post('/api/admin/backup', authenticate, requireAdmin, async (req, res) => {
+    try {
+        await backupToGitHub();
+        res.json({ success: true, message: 'Backup completed' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Endpoint manual restore (hanya admin)
+app.post('/api/admin/restore', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const restored = await restoreFromBackup();
+        if (restored) {
+            res.json({ success: true, message: 'Restore completed. Restarting...' });
+            setTimeout(() => process.exit(0), 1000);
+        } else {
+            res.json({ success: false, message: 'No backup to restore' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Jalankan restore saat server mulai (hanya jika database kosong)
+(async () => {
+    const dbPath = path.join(__dirname, 'database.json');
+    if (fs.existsSync(dbPath)) {
+        const dbData = fs.readFileSync(dbPath, 'utf8');
+        const db = JSON.parse(dbData);
+        // Jika hanya admin saja (data kosong), coba restore
+        if (db.users && db.users.length <= 1 && db.files.length === 0) {
+            await restoreFromBackup();
+        }
+    }
+})();
+
+// Mulai backup scheduler
+setTimeout(() => {
+    backupToGitHub();
+}, 60 * 1000); // Backup pertama setelah 1 menit
+
+setInterval(() => {
+    backupToGitHub();
+}, BACKUP_INTERVAL);
+
+console.log(`💾 Auto backup system initialized (every ${BACKUP_INTERVAL / 60000} minutes)`);
 server.listen(PORT, () => {
     console.log(`\n🚀 Server running on http://localhost:${PORT}`);
     console.log(`☁️ Cloudinary storage enabled`);
