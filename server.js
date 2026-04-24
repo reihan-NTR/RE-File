@@ -14,13 +14,13 @@ const server = http.createServer(app);
 const io = socketIo(server, { cors: { origin: "*" } });
 
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
+const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key_change_this';
 
-// ============ CLOUDINARY CONFIG ============
+// ============ CLOUDINARY CONFIGURATION ============
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'YOUR_CLOUD_NAME',
-    api_key: process.env.CLOUDINARY_API_KEY || 'YOUR_API_KEY',
-    api_secret: process.env.CLOUDINARY_API_SECRET || 'YOUR_API_SECRET'
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 // ============ MIDDLEWARE ============
@@ -28,25 +28,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// ============ DATABASE (JSON) ============
-const DB_PATH = path.join(__dirname, 'database.json');
-
-function readDB() {
-    if (!fs.existsSync(DB_PATH)) return null;
-    const data = fs.readFileSync(DB_PATH, 'utf8');
-    return JSON.parse(data);
-}
-
-function writeDB(data) {
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
-}
-
-// ============ DATABASE (JSON) ============
+// ============ DATABASE SETUP ============
 const DB_PATH = path.join(__dirname, 'database.json');
 const ADMIN_PATH = path.join(__dirname, 'admin.json');
 
+// Helper functions untuk database
 function readDB() {
-    if (!fs.existsSync(DB_PATH)) return { users: [], files: [], upload_queue: [], reports: [], rejected_files: [], next_id: { user: 2, queue: 1, report: 1 } };
+    if (!fs.existsSync(DB_PATH)) {
+        return { users: [], files: [], upload_queue: [], reports: [], rejected_files: [], next_id: { user: 2, queue: 1, report: 1 } };
+    }
     const data = fs.readFileSync(DB_PATH, 'utf8');
     return JSON.parse(data);
 }
@@ -55,7 +45,7 @@ function writeDB(data) {
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
 }
 
-// Load admin dari file terpisah (tidak akan hilang)
+// Load admin dari file terpisah (tidak akan hilang saat restart)
 function loadAdmin() {
     if (fs.existsSync(ADMIN_PATH)) {
         const adminData = fs.readFileSync(ADMIN_PATH, 'utf8');
@@ -64,13 +54,13 @@ function loadAdmin() {
     return null;
 }
 
-// Inisialisasi database (admin dari file terpisah)
+// Inisialisasi database
 function initDatabase() {
     const admin = loadAdmin();
     
     if (!fs.existsSync(DB_PATH)) {
         const initialData = {
-            users: [],  // Admin akan ditambahkan dari admin.json
+            users: [],
             files: [],
             upload_queue: [],
             reports: [],
@@ -78,7 +68,6 @@ function initDatabase() {
             next_id: { user: 2, queue: 1, report: 1 }
         };
         
-        // Tambahkan admin dari file terpisah
         if (admin) {
             initialData.users.push(admin);
         }
@@ -86,23 +75,82 @@ function initDatabase() {
         writeDB(initialData);
         console.log('✅ Database created');
     } else {
-        // Cek apakah admin ada di database.json
         const db = readDB();
         const adminExists = db.users.find(u => u.username === 'admin');
         
         if (!adminExists && admin) {
-            // Admin tidak ada, tambahkan dari admin.json
             db.users.unshift(admin);
             writeDB(db);
             console.log('✅ Admin restored from admin.json');
         }
     }
     
-    console.log('🔐 Admin user ready (from separate file)');
-    if (admin) {
-        console.log(`   Username: ${admin.username}`);
-    }
+    console.log('🔐 Admin user ready');
 }
+
+// ============ AUTO BACKUP SYSTEM ============
+const { exec } = require('child_process');
+
+async function backupToGitHub() {
+    console.log('📦 Starting backup to GitHub...');
+    
+    const dbPath = path.join(__dirname, 'database.json');
+    if (!fs.existsSync(dbPath)) {
+        console.log('❌ database.json not found');
+        return;
+    }
+    
+    const db = readDB();
+    const backupData = {
+        users: db.users.filter(u => u.username !== 'admin'),
+        files: db.files,
+        upload_queue: db.upload_queue,
+        reports: db.reports,
+        rejected_files: db.rejected_files,
+        next_id: db.next_id
+    };
+    
+    fs.writeFileSync(dbPath, JSON.stringify(backupData, null, 2));
+    
+    const commands = [
+        'git config user.name "Auto Backup Bot"',
+        'git config user.email "backup@fileshare.local"',
+        `git add database.json`,
+        `git commit -m "Auto backup: ${new Date().toLocaleString()}" || echo "No changes"`,
+        'git push origin main'
+    ];
+    
+    for (const cmd of commands) {
+        await new Promise((resolve) => {
+            exec(cmd, { cwd: __dirname }, (error, stdout) => {
+                if (error && !cmd.includes('||')) {
+                    console.log(`Error: ${error.message}`);
+                } else if (stdout) {
+                    console.log(stdout.substring(0, 200));
+                }
+                resolve();
+            });
+        });
+    }
+    
+    console.log('✅ Backup completed!');
+}
+
+// Backup setiap 30 menit
+setInterval(() => {
+    backupToGitHub();
+}, 30 * 60 * 1000);
+
+// Endpoint manual backup
+app.post('/api/admin/backup', authenticate, requireAdmin, async (req, res) => {
+    try {
+        await backupToGitHub();
+        res.json({ success: true, message: 'Backup completed' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ============ SOCKET.IO ============
 io.on('connection', (socket) => {
     console.log('🔌 Client connected:', socket.id);
@@ -137,7 +185,7 @@ const requireAdmin = (req, res, next) => {
     else res.status(403).json({ error: 'Admin access required' });
 };
 
-// ============ MULTER CONFIG (Temp storage) ============
+// ============ MULTER CONFIG ============
 const tempDir = path.join(__dirname, 'uploads', 'temp');
 if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
@@ -149,25 +197,39 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ storage, limits: { fileSize: 100 * 1024 * 1024 } }); // 100MB limit
+const upload = multer({ storage, limits: { fileSize: 100 * 1024 * 1024 } });
 
 // ============ AUTH ROUTES ============
 app.post('/api/register', async (req, res) => {
     const { username, email, password } = req.body;
-    if (!username || !email || !password) return res.status(400).json({ error: 'Semua field harus diisi' });
-    if (password.length < 6) return res.status(400).json({ error: 'Password minimal 6 karakter' });
+    
+    if (!username || !email || !password) {
+        return res.status(400).json({ error: 'Semua field harus diisi' });
+    }
+    if (password.length < 6) {
+        return res.status(400).json({ error: 'Password minimal 6 karakter' });
+    }
     
     const db = readDB();
-    if (db.users.find(u => u.username === username)) return res.status(400).json({ error: 'Username sudah terdaftar' });
-    if (db.users.find(u => u.email === email)) return res.status(400).json({ error: 'Email sudah terdaftar' });
+    if (db.users.find(u => u.username === username)) {
+        return res.status(400).json({ error: 'Username sudah terdaftar' });
+    }
+    if (db.users.find(u => u.email === email)) {
+        return res.status(400).json({ error: 'Email sudah terdaftar' });
+    }
     
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = {
-        id: db.next_id.user++, username, email, password: hashedPassword,
-        role: 'user', created_at: new Date().toISOString()
+        id: db.next_id.user++,
+        username,
+        email,
+        password: hashedPassword,
+        role: 'user',
+        created_at: new Date().toISOString()
     };
     db.users.push(newUser);
     writeDB(db);
+    
     res.json({ success: true, message: 'Registrasi berhasil! Silakan login.' });
 });
 
@@ -175,13 +237,27 @@ app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
     const db = readDB();
     const user = db.users.find(u => u.username === username);
-    if (!user) return res.status(401).json({ error: 'Username atau password salah' });
+    
+    if (!user) {
+        return res.status(401).json({ error: 'Username atau password salah' });
+    }
     
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(401).json({ error: 'Username atau password salah' });
+    if (!validPassword) {
+        return res.status(401).json({ error: 'Username atau password salah' });
+    }
     
-    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ success: true, token, user: { id: user.id, username: user.username, email: user.email, role: user.role } });
+    const token = jwt.sign(
+        { id: user.id, username: user.username, role: user.role },
+        JWT_SECRET,
+        { expiresIn: '7d' }
+    );
+    
+    res.json({
+        success: true,
+        token,
+        user: { id: user.id, username: user.username, email: user.email, role: user.role }
+    });
 });
 
 // ============ FILE ROUTES ============
@@ -190,17 +266,36 @@ app.get('/api/files', async (req, res) => {
     let files = [...db.files];
     const { search, category, sort, page = 1, limit = 20 } = req.query;
     
-    if (search) files = files.filter(f => f.original_name.toLowerCase().includes(search.toLowerCase()) || (f.description && f.description.toLowerCase().includes(search.toLowerCase())));
-    if (category && category !== 'all') files = files.filter(f => f.category === category);
-    if (sort === 'downloads') files.sort((a, b) => b.download_count - a.download_count);
-    else files.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at));
+    if (search) {
+        files = files.filter(f => 
+            f.original_name.toLowerCase().includes(search.toLowerCase()) || 
+            (f.description && f.description.toLowerCase().includes(search.toLowerCase()))
+        );
+    }
+    if (category && category !== 'all') {
+        files = files.filter(f => f.category === category);
+    }
+    if (sort === 'downloads') {
+        files.sort((a, b) => b.download_count - a.download_count);
+    } else {
+        files.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at));
+    }
     
     const users = db.users;
-    const filesWithUploader = files.map(f => ({ ...f, uploader_name: users.find(u => u.id === f.uploaded_by)?.username || 'Unknown' }));
+    const filesWithUploader = files.map(f => ({
+        ...f,
+        uploader_name: users.find(u => u.id === f.uploaded_by)?.username || 'Unknown'
+    }));
+    
     const start = (parseInt(page) - 1) * parseInt(limit);
     const paginatedFiles = filesWithUploader.slice(start, start + parseInt(limit));
     
-    res.json({ files: paginatedFiles, total_files: files.length, current_page: parseInt(page), total_pages: Math.ceil(files.length / limit) });
+    res.json({
+        files: paginatedFiles,
+        total_files: files.length,
+        current_page: parseInt(page),
+        total_pages: Math.ceil(files.length / limit)
+    });
 });
 
 app.post('/api/download/:id', async (req, res) => {
@@ -213,27 +308,21 @@ app.post('/api/download/:id', async (req, res) => {
     res.json({ success: true });
 });
 
-// DOWNLOAD dari Cloudinary
 app.get('/api/download/:id', async (req, res) => {
     const db = readDB();
     const file = db.files.find(f => f.id === req.params.id);
-    
-    if (!file) {
+    if (!file || !file.cloudinary_url) {
         return res.status(404).send('File not found');
     }
-    
-    if (!file.cloudinary_url) {
-        return res.status(404).send('File URL not found');
-    }
-    
-    // Redirect ke URL Cloudinary untuk download
     res.redirect(file.cloudinary_url + '?download=1');
 });
 
 // ============ UPLOAD ROUTES ============
 app.post('/api/upload/submit', authenticate, upload.single('file'), async (req, res) => {
     try {
-        if (!req.file) return res.status(400).json({ error: 'Tidak ada file' });
+        if (!req.file) {
+            return res.status(400).json({ error: 'Tidak ada file' });
+        }
         
         const db = readDB();
         const { description, category } = req.body;
@@ -256,7 +345,9 @@ app.post('/api/upload/submit', authenticate, upload.single('file'), async (req, 
         
         res.json({ success: true, message: 'File dikirim untuk verifikasi', queue_id: newQueueItem.id });
     } catch (error) {
-        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
         res.status(500).json({ error: 'Gagal upload' });
     }
 });
@@ -275,10 +366,14 @@ app.get('/api/admin/queue', authenticate, requireAdmin, async (req, res) => {
     const db = readDB();
     const pending = db.upload_queue.filter(q => q.status === 'pending');
     const users = db.users;
-    res.json({ queues: pending.map(q => ({ ...q, uploader_name: users.find(u => u.id === q.uploaded_by)?.username || 'Unknown' })) });
+    res.json({ 
+        queues: pending.map(q => ({ 
+            ...q, 
+            uploader_name: users.find(u => u.id === q.uploaded_by)?.username || 'Unknown' 
+        }))
+    });
 });
 
-// APPROVE dengan upload ke Cloudinary
 app.post('/api/admin/approve/:queueId', authenticate, requireAdmin, async (req, res) => {
     try {
         const db = readDB();
@@ -297,7 +392,6 @@ app.post('/api/admin/approve/:queueId', authenticate, requireAdmin, async (req, 
             folder: 'fileshare',
             public_id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`
         });
-        
         console.log('✅ Uploaded to Cloudinary:', cloudinaryResult.secure_url);
         
         // Hapus file temp
@@ -306,7 +400,6 @@ app.post('/api/admin/approve/:queueId', authenticate, requireAdmin, async (req, 
         }
         
         const fileId = 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
-        
         const newFile = {
             id: fileId,
             original_name: queueItem.original_name,
@@ -327,6 +420,7 @@ app.post('/api/admin/approve/:queueId', authenticate, requireAdmin, async (req, 
         db.upload_queue[queueIndex].reviewed_by = req.user.id;
         writeDB(db);
         
+        // Broadcast ke semua user
         const users = db.users;
         const fileWithUploader = {
             ...newFile,
@@ -345,10 +439,15 @@ app.post('/api/admin/reject/:queueId', authenticate, requireAdmin, async (req, r
     const db = readDB();
     const queueIndex = db.upload_queue.findIndex(q => q.id === parseInt(req.params.queueId) && q.status === 'pending');
     
-    if (queueIndex === -1) return res.status(404).json({ error: 'Queue item not found' });
+    if (queueIndex === -1) {
+        return res.status(404).json({ error: 'Queue item not found' });
+    }
     
     const queueItem = db.upload_queue[queueIndex];
-    if (fs.existsSync(queueItem.temp_path)) fs.unlinkSync(queueItem.temp_path);
+    
+    if (fs.existsSync(queueItem.temp_path)) {
+        fs.unlinkSync(queueItem.temp_path);
+    }
     
     db.rejected_files.push({
         id: db.rejected_files.length + 1,
@@ -374,12 +473,18 @@ app.post('/api/admin/reject/:queueId', authenticate, requireAdmin, async (req, r
 app.post('/api/report', authenticate, async (req, res) => {
     const { file_id, reason, description } = req.body;
     const db = readDB();
+    
     db.reports.push({
         id: 'report_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-        file_id, reported_by: req.user.id, reason, description: description || '',
-        status: 'pending', created_at: new Date().toISOString()
+        file_id: file_id,
+        reported_by: req.user.id,
+        reason: reason,
+        description: description || '',
+        status: 'pending',
+        created_at: new Date().toISOString()
     });
     writeDB(db);
+    
     res.json({ success: true, message: 'Laporan terkirim' });
 });
 
@@ -388,10 +493,14 @@ app.get('/api/admin/reports', authenticate, requireAdmin, async (req, res) => {
     const pendingReports = db.reports.filter(r => r.status === 'pending');
     const users = db.users;
     const files = db.files;
-    res.json({ reports: pendingReports.map(r => ({
-        ...r, reporter_name: users.find(u => u.id === r.reported_by)?.username || 'Unknown',
-        file_name: files.find(f => f.id === r.file_id)?.original_name || 'File sudah dihapus'
-    })) });
+    
+    res.json({ 
+        reports: pendingReports.map(r => ({
+            ...r,
+            reporter_name: users.find(u => u.id === r.reported_by)?.username || 'Unknown',
+            file_name: files.find(f => f.id === r.file_id)?.original_name || 'File sudah dihapus'
+        }))
+    });
 });
 
 app.post('/api/admin/delete-file/:fileId', authenticate, requireAdmin, async (req, res) => {
@@ -401,7 +510,6 @@ app.post('/api/admin/delete-file/:fileId', authenticate, requireAdmin, async (re
     if (fileIndex !== -1) {
         const file = db.files[fileIndex];
         
-        // Hapus dari Cloudinary
         if (file.cloudinary_public_id) {
             try {
                 await cloudinary.uploader.destroy(file.cloudinary_public_id);
@@ -415,49 +523,58 @@ app.post('/api/admin/delete-file/:fileId', authenticate, requireAdmin, async (re
         writeDB(db);
         broadcastFileDeleted(req.params.fileId);
     }
+    
     res.json({ success: true });
 });
 
 app.post('/api/admin/ignore-report/:reportId', authenticate, requireAdmin, async (req, res) => {
     const db = readDB();
     const reportIndex = db.reports.findIndex(r => r.id === req.params.reportId);
+    
     if (reportIndex !== -1) {
         db.reports[reportIndex].status = 'ignored';
         db.reports[reportIndex].resolved_at = new Date().toISOString();
         writeDB(db);
     }
+    
     res.json({ success: true });
 });
 
-// ============ EDIT & DELETE FILE ============
+// ============ EDIT & DELETE FILE (for owner) ============
 app.put('/api/file/:fileId', authenticate, async (req, res) => {
     const { description, category } = req.body;
     const db = readDB();
     const fileIndex = db.files.findIndex(f => f.id === req.params.fileId);
     
-    if (fileIndex === -1) return res.status(404).json({ error: 'File not found' });
-    if (db.files[fileIndex].uploaded_by !== req.user.id && req.user.role !== 'admin') {
+    if (fileIndex === -1) {
+        return res.status(404).json({ error: 'File not found' });
+    }
+    
+    const file = db.files[fileIndex];
+    if (file.uploaded_by !== req.user.id && req.user.role !== 'admin') {
         return res.status(403).json({ error: 'You can only edit your own files' });
     }
     
     db.files[fileIndex].description = description || '';
     db.files[fileIndex].category = category || 'Other';
     writeDB(db);
-    res.json({ success: true });
+    
+    res.json({ success: true, message: 'File updated' });
 });
 
 app.delete('/api/file/:fileId', authenticate, async (req, res) => {
     const db = readDB();
     const fileIndex = db.files.findIndex(f => f.id === req.params.fileId);
     
-    if (fileIndex === -1) return res.status(404).json({ error: 'File not found' });
-    if (db.files[fileIndex].uploaded_by !== req.user.id && db.files[fileIndex].uploaded_by !== req.user.id && req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'You can only delete your own files' });
+    if (fileIndex === -1) {
+        return res.status(404).json({ error: 'File not found' });
     }
     
     const file = db.files[fileIndex];
+    if (file.uploaded_by !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'You can only delete your own files' });
+    }
     
-    // Hapus dari Cloudinary
     if (file.cloudinary_public_id) {
         try {
             await cloudinary.uploader.destroy(file.cloudinary_public_id);
@@ -470,196 +587,31 @@ app.delete('/api/file/:fileId', authenticate, async (req, res) => {
     db.files.splice(fileIndex, 1);
     writeDB(db);
     broadcastFileDeleted(req.params.fileId);
-    res.json({ success: true });
+    
+    res.json({ success: true, message: 'File deleted' });
 });
 
 // ============ STATS ============
 app.get('/api/stats', async (req, res) => {
     const db = readDB();
-    res.json({
-        total_files: db.files.length,
-        total_downloads: db.files.reduce((sum, f) => sum + (f.download_count || 0), 0),
-        total_users: db.users.length
-    });
+    const totalFiles = db.files.length;
+    const totalDownloads = db.files.reduce((sum, f) => sum + (f.download_count || 0), 0);
+    const totalUsers = db.users.length;
+    
+    res.json({ total_files: totalFiles, total_downloads: totalDownloads, total_users: totalUsers });
 });
 
 // ============ SERVE FRONTEND ============
-app.use((req, res) => {
+app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ============ START SERVER ============
 initDatabase();
-// ============ AUTO BACKUP TO GITHUB ============
-const { exec } = require('child_process');
-
-// Konfigurasi GitHub
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
-const GITHUB_REPO = process.env.GITHUB_REPO || '';
-const BACKUP_INTERVAL = 5 * 60 * 1000; // Backup setiap 5 menit
-
-async function backupToGitHub() {
-    console.log('📦 Starting backup to GitHub...');
-    
-    
-    const db = readDB();
-    
-    // Backup database.json (admin tidak perlu karena ada di admin.json)
-    // Tapi tetap backup data user dan file
-    const backupData = {
-        users: db.users.filter(u => u.username !== 'admin'), // Admin tidak perlu di backup
-        files: db.files,
-        upload_queue: db.upload_queue,
-        reports: db.reports,
-        rejected_files: db.rejected_files,
-        next_id: db.next_id
-    };
-    
-    const backupContent = JSON.stringify(backupData, null, 2);
-    fs.writeFileSync(dbPath, backupContent);
-    
-    const { exec } = require('child_process');
-    
-    const commands = [
-        'git config user.name "Auto Backup Bot"',
-        'git config user.email "backup@fileshare.local"',
-        `git add database.json`,
-        `git commit -m "Auto backup: ${new Date().toLocaleString()}" || echo "No changes"`,
-        'git push origin main'
-    ];
-    
-    for (const cmd of commands) {
-        await new Promise((resolve) => {
-            exec(cmd, { cwd: __dirname }, (error, stdout) => {
-                if (error && !cmd.includes('||')) {
-                    console.log(`Error: ${error.message}`);
-                } else if (stdout) {
-                    console.log(stdout.substring(0, 200));
-                }
-                resolve();
-            });
-        });
-    }
-    
-    console.log('✅ Backup completed!');
-}
-
-// Fungsi untuk restore dari backup (tidak mengganggu admin)
-async function restoreFromBackup() {
-    console.log('🔄 Checking for backup to restore...');
-    
-    const dbPath = path.join(__dirname, 'database.json');
-    const admin = loadAdmin();
-    
-    // Cek apakah database saat ini hanya berisi admin
-    let isDatabaseEmpty = true;
-    if (fs.existsSync(dbPath)) {
-        const currentDb = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-        // Jika hanya admin yang ada (admin dari file admin.json)
-        const onlyAdmin = currentDb.users.length === 1 && 
-                         currentDb.users[0].username === 'admin' &&
-                         currentDb.files.length === 0;
-        
-        if (onlyAdmin) {
-            isDatabaseEmpty = true;
-            console.log('Database has only admin, ready to restore');
-        } else {
-            isDatabaseEmpty = false;
-            console.log(`Database has ${currentDb.files.length} files, skipping restore`);
-        }
-    }
-    
-    if (!isDatabaseEmpty) {
-        return false;
-    }
-    
-    // Pull dari GitHub
-    const { exec } = require('child_process');
-    
-    return new Promise((resolve) => {
-        exec('git pull origin main --no-rebase', { cwd: __dirname }, (error, stdout, stderr) => {
-            if (error) {
-                console.log('Git pull error:', error.message);
-                resolve(false);
-            } else {
-                if (fs.existsSync(dbPath)) {
-                    const restoredDb = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-                    
-                    // Pastikan admin tetap dari admin.json (bukan dari backup)
-                    if (admin) {
-                        // Hapus admin dari backup jika ada
-                        restoredDb.users = restoredDb.users.filter(u => u.username !== 'admin');
-                        restoredDb.users.unshift(admin);
-                    }
-                    
-                    // Tulis ulang database
-                    writeDB(restoredDb);
-                    
-                    if (restoredDb.files && restoredDb.files.length > 0) {
-                        console.log(`✅ Database restored! Found ${restoredDb.files.length} files`);
-                        resolve(true);
-                    } else {
-                        resolve(false);
-                    }
-                } else {
-                    resolve(false);
-                }
-            }
-        });
-    });
-}
-
-
-// Endpoint manual backup (hanya admin)
-app.post('/api/admin/backup', authenticate, requireAdmin, async (req, res) => {
-    try {
-        await backupToGitHub();
-        res.json({ success: true, message: 'Backup completed' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Endpoint manual restore (hanya admin)
-app.post('/api/admin/restore', authenticate, requireAdmin, async (req, res) => {
-    try {
-        const restored = await restoreFromBackup();
-        if (restored) {
-            res.json({ success: true, message: 'Restore completed. Restarting...' });
-            setTimeout(() => process.exit(0), 1000);
-        } else {
-            res.json({ success: false, message: 'No backup to restore' });
-        }
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Jalankan restore saat server mulai (hanya jika database kosong)
-(async () => {
-    const dbPath = path.join(__dirname, 'database.json');
-    if (fs.existsSync(dbPath)) {
-        const dbData = fs.readFileSync(dbPath, 'utf8');
-        const db = JSON.parse(dbData);
-        // Jika hanya admin saja (data kosong), coba restore
-        if (db.users && db.users.length <= 1 && db.files.length === 0) {
-            await restoreFromBackup();
-        }
-    }
-})();
-
-// Mulai backup scheduler
-setTimeout(() => {
-    backupToGitHub();
-}, 60 * 1000); // Backup pertama setelah 1 menit
-
-setInterval(() => {
-    backupToGitHub();
-}, BACKUP_INTERVAL);
-
-console.log(`💾 Auto backup system initialized (every ${BACKUP_INTERVAL / 60000} minutes)`);
 server.listen(PORT, () => {
     console.log(`\n🚀 Server running on http://localhost:${PORT}`);
     console.log(`☁️ Cloudinary storage enabled`);
-    console.log(`🔐 Admin: admin / admin123\n`);
+    console.log(`💾 Database: ${DB_PATH}`);
+    console.log(`🔐 Admin: admin / admin123`);
+    console.log(`📦 Auto backup every 30 minutes\n`);
 });
