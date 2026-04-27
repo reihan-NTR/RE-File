@@ -1,8 +1,0 @@
-{
-  "id": 1,
-  "username": "admin",
-  "email": "admin@fileshare.com",
-  "password": "$2a$10$N9qo8uLOickgx2ZMRZoMy.MqrqbKg8qZqYqZqYqZqYqZqYqZqYq",
-  "role": "admin",
-  "created_at": "2024-01-01T00:00:00.000Z"
-}

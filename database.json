@@ -1,0 +1,148 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "email": "admin@fileshare.com",
+      "password": "$2b$10$FwlesiOKkY.4qrYkVS4IM.J3whb9vxaKDXB1lmNcV90hGc53Gqnza",
+      "role": "admin",
+      "created_at": "2026-04-27T01:29:05.917Z"
+    },
+    {
+      "id": 2,
+      "username": "reihan",
+      "email": "reihan@id",
+      "password": "$2b$10$f460kUPtdeD3A/RSMWbPe.v8TKnEFxIkANslkWgoWuPJu34WfKKPy",
+      "role": "user",
+      "created_at": "2026-04-27T01:52:47.363Z"
+    }
+  ],
+  "files": [
+    {
+      "id": "file_1777268062735_zyj2zw0v",
+      "original_name": "Screenshot (17).png",
+      "stored_name": "uploads/files/file_1777268062735_zyj2zw0v.png",
+      "size": 71098,
+      "mime_type": "image/png",
+      "uploaded_by": 1,
+      "description": "",
+      "category": "Document",
+      "download_count": 0,
+      "uploaded_at": "2026-04-27T05:34:22.737Z"
+    }
+  ],
+  "upload_queue": [
+    {
+      "id": 1,
+      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1777254331159-26324885.png",
+      "original_name": "Screenshot (22).png",
+      "file_size": 1725079,
+      "mime_type": "image/png",
+      "uploaded_by": 1,
+      "description": "arthurbrut",
+      "category": "Image",
+      "status": "approved",
+      "submitted_at": "2026-04-27T01:45:31.294Z"
+    },
+    {
+      "id": 2,
+      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1777255731807-803808472.png",
+      "original_name": "Screenshot (18).png",
+      "file_size": 141517,
+      "mime_type": "image/png",
+      "uploaded_by": 2,
+      "description": "",
+      "category": "Document",
+      "status": "approved",
+      "submitted_at": "2026-04-27T02:08:51.815Z"
+    },
+    {
+      "id": 3,
+      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1777258663584-978641109.png",
+      "original_name": "Screenshot (18).png",
+      "file_size": 141517,
+      "mime_type": "image/png",
+      "uploaded_by": 2,
+      "description": "",
+      "category": "Document",
+      "status": "approved",
+      "submitted_at": "2026-04-27T02:57:43.593Z"
+    },
+    {
+      "id": 4,
+      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1777259765482-804876956.png",
+      "original_name": "slavedns.png",
+      "file_size": 99249,
+      "mime_type": "image/png",
+      "uploaded_by": 2,
+      "description": "",
+      "category": "Document",
+      "status": "approved",
+      "submitted_at": "2026-04-27T03:16:05.507Z"
+    },
+    {
+      "id": 5,
+      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1777259812547-988735532.png",
+      "original_name": "Screenshot (18).png",
+      "file_size": 141517,
+      "mime_type": "image/png",
+      "uploaded_by": 2,
+      "description": "",
+      "category": "Document",
+      "status": "rejected",
+      "submitted_at": "2026-04-27T03:16:52.567Z"
+    },
+    {
+      "id": 6,
+      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1777266893651-427278120.png",
+      "original_name": "Screenshot (19).png",
+      "file_size": 101069,
+      "mime_type": "image/png",
+      "uploaded_by": 2,
+      "description": "",
+      "category": "Document",
+      "status": "approved",
+      "submitted_at": "2026-04-27T05:14:53.660Z"
+    },
+    {
+      "id": 7,
+      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1777268059197-237152361.png",
+      "original_name": "Screenshot (17).png",
+      "file_size": 71098,
+      "mime_type": "image/png",
+      "uploaded_by": 1,
+      "description": "",
+      "category": "Document",
+      "status": "approved",
+      "submitted_at": "2026-04-27T05:34:19.206Z"
+    }
+  ],
+  "reports": [
+    {
+      "id": "report_1777258220685_1hzcdp",
+      "file_id": "file_1777256189905_45d8uz5o",
+      "reported_by": 1,
+      "reason": "Konten tidak pantas",
+      "description": "manuk",
+      "status": "ignored",
+      "created_at": "2026-04-27T02:50:20.685Z",
+      "resolved_at": "2026-04-27T02:50:35.664Z"
+    }
+  ],
+  "rejected_files": [
+    {
+      "original_name": "Screenshot (18).png",
+      "file_size": 141517,
+      "uploaded_by": 2,
+      "description": "",
+      "category": "Document",
+      "reject_reason": "Ditolak oleh admin",
+      "rejected_at": "2026-04-27T03:17:01.151Z"
+    }
+  ],
+  "next_id": {
+    "user": 3,
+    "queue": 8,
+    "report": 1
+  }
+}

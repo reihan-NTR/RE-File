@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RE:File | Berbagi dengan mudah</title>
+    <title>FileShare | Platform Berbagi File</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="/socket.io/socket.io.js"></script>
     <style>
@@ -19,8 +19,6 @@
         .hero { text-align: center; color: white; padding: 2rem 1rem; }
         .hero h1 { font-size: 2.5rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
         .hero p { font-size: 1.1rem; opacity: 0.95; }
-
-        /* Search Bar */
         .search-wrapper { background: white; border-radius: 60px; padding: 0.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.15); margin-bottom: 2rem; transition: all 0.3s; }
         .search-wrapper:hover { box-shadow: 0 25px 50px rgba(0,0,0,0.2); transform: translateY(-2px); }
         .search-container { display: flex; gap: 0.5rem; align-items: center; flex-wrap: nowrap; }
@@ -35,21 +33,15 @@
         .search-btn:hover { transform: scale(1.02); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
         @media (max-width: 900px) { .search-container { flex-wrap: wrap; } .search-input-group { flex: 100%; width: 100%; } .filter-group { flex: 1; min-width: 150px; } .search-btn { flex: 0.5; justify-content: center; } }
         @media (max-width: 600px) { .filter-group { flex-wrap: wrap; width: 100%; } .filter-select { width: 100%; } .search-btn { width: 100%; justify-content: center; } }
-
-        /* Stats Cards */
         .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
         .stat-card { background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 20px; padding: 1.2rem; text-align: center; color: white; transition: all 0.3s; border: 1px solid rgba(255,255,255,0.2); }
         .stat-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.25); }
         .stat-number { font-size: 2rem; font-weight: 800; }
         .stat-label { font-size: 0.85rem; opacity: 0.9; margin-top: 0.3rem; }
-
-        /* Category Pills */
         .categories-wrapper { margin-bottom: 2rem; overflow-x: auto; white-space: nowrap; padding-bottom: 0.5rem; }
         .categories { display: inline-flex; gap: 0.8rem; }
         .category-pill { background: rgba(255,255,255,0.2); color: white; padding: 0.6rem 1.5rem; border-radius: 50px; cursor: pointer; transition: all 0.3s; font-size: 0.9rem; font-weight: 500; backdrop-filter: blur(5px); display: inline-flex; align-items: center; gap: 0.5rem; }
         .category-pill:hover, .category-pill.active { background: white; color: #667eea; transform: translateY(-2px); }
-
-        /* Files Grid */
         .files-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem; }
         .file-card { background: white; border-radius: 20px; padding: 1.5rem; transition: all 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         .file-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
@@ -65,12 +57,8 @@
         .edit-btn { flex: 1; padding: 0.7rem; background: #4299e1; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; }
         .delete-btn { flex: 1; padding: 0.7rem; background: #f56565; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; }
         .report-btn { flex: 1; padding: 0.7rem; background: #ed8936; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; }
-
-        /* Floating Button */
         .fab { position: fixed; bottom: 2rem; right: 2rem; width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 25px rgba(0,0,0,0.3); border: none; font-size: 1.5rem; z-index: 100; transition: all 0.3s; }
         .fab:hover { transform: scale(1.1) rotate(90deg); }
-
-        /* Modals */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 2000; justify-content: center; align-items: center; }
         .modal-content { background: white; border-radius: 30px; max-width: 500px; width: 90%; padding: 2rem; max-height: 90vh; overflow-y: auto; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
@@ -95,7 +83,7 @@
         .empty-state { text-align: center; padding: 4rem; background: white; border-radius: 30px; color: #a0aec0; }
         .owner-badge { background: #48bb78; color: white; font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 50px; margin-left: 0.5rem; }
         .admin-tabs { background: white; border-radius: 20px; padding: 0.5rem; margin-bottom: 2rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .admin-tab { flex: 1; padding: 1rem; border: none; border-radius: 15px; cursor: pointer;  background: linear-gradient(135deg, #667eea, #764ba2);color: white; transition: all 0.3s; font-weight: 600; }
+        .admin-tab { flex: 1; padding: 1rem; border: none; border-radius: 15px; cursor: pointer; background: #f7fafc; transition: all 0.3s; font-weight: 600; }
         .admin-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
         .queue-card, .report-card { background: white; border-radius: 20px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 4px solid #ed8936; }
         @media (max-width: 768px) { .container { padding: 1rem; } .stats-grid { grid-template-columns: repeat(2, 1fr); } .files-grid { grid-template-columns: 1fr; } .fab { width: 55px; height: 55px; bottom: 1rem; right: 1rem; } }
@@ -104,7 +92,7 @@
 <body>
 
 <nav class="navbar">
-    <div class="logo" onclick="loadFiles()"><i class="fas fa-cloud-upload-alt"></i> RE:File</div>
+    <div class="logo" onclick="loadFiles()"><i class="fas fa-cloud-upload-alt"></i><a href="index.html">RE-File </a></div>
     <div class="nav-links">
         <a onclick="showMyUploads()" id="myUploadsLink" style="display:none;"><i class="fas fa-folder-open"></i> Upload Saya</a>
         <a onclick="showAdminPanel()" id="adminPanelLink" style="display:none;"><i class="fas fa-shield-alt"></i> Admin Panel</a>
@@ -117,18 +105,19 @@
 
 <div class="container">
     <div class="hero" id="heroSection">
-        <h1><i class="fas fa-share-alt"></i> Bagikan & Unduh File</h1>
+        <h1><i class="fas fa-share-alt"></i> Bagikan & Unduh File Gratis</h1>
+        <p>Upload file sebesar apapun! Real-time update ketika ada file baru</p>
     </div>
 
     <div class="search-wrapper">
         <div class="search-container">
             <div class="search-input-group">
                 <i class="fas fa-search"></i>
-                <input type="text" class="search-input" id="searchInput" placeholder="Cari file berdasarkan nama atau deskripsi..." onkeyup="searchFiles()">
+                <input type="text" class="search-input" id="searchInput" placeholder="Cari file..." onkeyup="searchFiles()">
             </div>
             <div class="filter-group">
                 <select class="filter-select" id="categoryFilter" onchange="searchFiles()">
-                    <option value="all">📁 Kategori</option>
+                    <option value="all">📁 Semua Kategori</option>
                     <option value="Document">📄 Dokumen</option>
                     <option value="Image">🖼️ Gambar</option>
                     <option value="Video">🎬 Video</option>
@@ -148,7 +137,6 @@
         <div class="admin-tabs">
             <button class="admin-tab active" onclick="showPendingQueue()"><i class="fas fa-clock"></i> Verifikasi Upload</button>
             <button class="admin-tab" onclick="showReportsList()"><i class="fas fa-flag"></i> Laporan User</button>
-            <button class="admin-tab" onclick="manualBackup()" style="background:#48bb78; color:white;"><i class="fas fa-database"></i> Backup Sekarang</button>
         </div>
         <div id="adminContent"></div>
     </div>
@@ -186,6 +174,7 @@
             <div class="form-group"><input type="password" id="regPassword" placeholder="Password (min 6)"></div>
             <button class="btn-primary" onclick="register()"><i class="fas fa-user-plus"></i> Daftar</button>
         </div>
+        <p style="text-align:center; margin-top:1rem; font-size:0.8rem; color:#718096;">Demo: admin / admin123</p>
     </div>
 </div>
 
@@ -257,50 +246,49 @@
 
     // ============ SOCKET.IO REAL-TIME ============
     function initSocket() {
-        if (socket) return;
-        
-        socket = io({
-            transports: ['websocket', 'polling'],
-            reconnection: true,
-            reconnectionAttempts: 5
-        });
-        
-        socket.on('connect', () => {
-            console.log('🔌 Real-time connected');
-            if (currentUser && currentUser.id) {
-                socket.emit('register-user', currentUser.id);
-            }
-        });
-        
-        socket.on('new-file', (file) => {
-            console.log('📢 New file real-time:', file.original_name);
-            showToast(`📢 File baru: ${file.original_name} telah ditambahkan!`);
-            refreshFiles();
-        });
-        
-        socket.on('file-deleted', (fileId) => {
-            console.log('📢 File deleted real-time:', fileId);
-            showToast(`🗑️ Sebuah file telah dihapus`);
-            refreshFiles();
-        });
-        
-        socket.on('file-updated', (data) => {
-            console.log('📢 File updated real-time:', data.id);
-            refreshFiles();
-        });
-        
-        socket.on('disconnect', () => {
-            console.log('🔌 Real-time disconnected');
-        });
-        
-        socket.on('connect_error', (err) => {
-            console.log('Socket connection error:', err.message);
-        });
-    }
-
-    function refreshFiles() {
-        loadFiles();
-        loadStats();
+        try {
+            socket = io({
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionAttempts: 5
+            });
+            
+            socket.on('connect', () => {
+                console.log('🔌 Real-time connected');
+                if (currentUser && currentUser.id) {
+                    socket.emit('register-user', currentUser.id);
+                }
+            });
+            
+            socket.on('new-file', (file) => {
+                console.log('📢 New file real-time:', file.original_name);
+                showToast(`📢 File baru: ${file.original_name} telah ditambahkan!`);
+                loadFiles();
+                loadStats();
+            });
+            
+            socket.on('file-deleted', (fileId) => {
+                console.log('📢 File deleted real-time:', fileId);
+                showToast(`🗑️ Sebuah file telah dihapus`);
+                loadFiles();
+                loadStats();
+            });
+            
+            socket.on('file-updated', (data) => {
+                console.log('📢 File updated real-time:', data.id);
+                loadFiles();
+            });
+            
+            socket.on('disconnect', () => {
+                console.log('🔌 Real-time disconnected');
+            });
+            
+            socket.on('connect_error', (err) => {
+                console.log('Socket connection error:', err.message);
+            });
+        } catch (err) {
+            console.log('Socket init error:', err);
+        }
     }
 
     // ============ HELPER FUNCTIONS ============
@@ -512,9 +500,7 @@
         const categories = [...new Set(files.map(f => f.category).filter(c => c))];
         const container = document.getElementById('categoriesContainer');
         const currentCategory = document.getElementById('categoryFilter').value;
-        
         container.innerHTML = `<div class="category-pill ${currentCategory === 'all' ? 'active' : ''}" data-category="all" onclick="filterByCategory('all')"><i class="fas fa-layer-group"></i> Semua (${files.length})</div>`;
-        
         categories.forEach(cat => {
             const count = files.filter(f => f.category === cat).length;
             container.innerHTML += `<div class="category-pill ${currentCategory === cat ? 'active' : ''}" data-category="${cat}" onclick="filterByCategory('${cat}')">${getCategoryIcon(cat)} ${cat} (${count})</div>`;
@@ -577,9 +563,8 @@
         } catch (err) { showToast(err.message, true); }
     }
 
-    // ============ EDIT & DELETE (DIPERBAIKI) ============
+    // ============ EDIT & DELETE ============
     function openEditModal(fileId, fileName, description, category) {
-        console.log('Opening edit modal for:', fileId, fileName);
         currentEditFileId = fileId;
         document.getElementById('editFileInfo').innerHTML = `<strong>📄 ${fileName}</strong>`;
         document.getElementById('editDescription').value = description;
@@ -588,54 +573,27 @@
     }
 
     async function saveEdit() {
-        if (!currentEditFileId) {
-            showToast('Error: No file selected', true);
-            return;
-        }
-        
-        const newDescription = document.getElementById('editDescription').value;
-        const newCategory = document.getElementById('editCategory').value;
-        
         try {
-            const response = await fetch(API_BASE + `/api/file/${currentEditFileId}`, {
+            await apiCall(`/api/file/${currentEditFileId}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({
-                    description: newDescription,
-                    category: newCategory
+                    description: document.getElementById('editDescription').value,
+                    category: document.getElementById('editCategory').value
                 })
             });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error);
-            
             showToast('✅ File berhasil diupdate!');
             closeModal('editModal');
-            loadFiles(); // Refresh daftar file
-            currentEditFileId = null;
-        } catch (err) { 
-            showToast(err.message, true); 
-        }
+            loadFiles();
+        } catch (err) { showToast(err.message, true); }
     }
 
     async function deleteOwnFile(fileId) {
-        if (!confirm('Yakin ingin menghapus file ini? Tindakan ini tidak bisa dibatalkan.')) return;
-        
+        if (!confirm('Yakin ingin menghapus file ini?')) return;
         try {
-            const response = await fetch(API_BASE + `/api/file/${fileId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error);
-            
+            await apiCall(`/api/file/${fileId}`, { method: 'DELETE' });
             showToast('✅ File berhasil dihapus!');
             loadFiles();
-        } catch (err) { 
-            showToast(err.message, true); 
-        }
+        } catch (err) { showToast(err.message, true); }
     }
 
     // ============ REPORT ============
@@ -662,7 +620,7 @@
         } catch (err) { showToast(err.message, true); }
     }
 
-    // ============ MY UPLOADS (DIPERBAIKI) ============
+    // ============ MY UPLOADS ============
     async function showMyUploads() {
         if (!currentUser) { showToast('Login dulu', true); showLoginModal(); return; }
         
@@ -670,84 +628,27 @@
             const data = await apiCall('/api/upload/my-uploads');
             let html = '<div style="max-height:70vh; overflow-y:auto;">';
             
-            // File menunggu verifikasi (hanya yang status pending)
-            const pendingQueues = data.queues.filter(q => q.status === 'pending');
             html += '<h4><i class="fas fa-clock"></i> Menunggu Verifikasi</h4>';
-            if (pendingQueues.length === 0) {
-                html += '<p style="color:#718096;">Tidak ada file dalam antrean</p>';
-            } else {
-                html += pendingQueues.map(q => `
-                    <div style="background:#fef5e7; padding:1rem; margin-bottom:0.5rem; border-radius:10px;">
-                        <strong>${escapeHtml(q.original_name)}</strong>
-                        ${q.description ? `<br><small>📝 ${escapeHtml(q.description)}</small>` : ''}
-                        <br><small>📦 ${formatFileSize(q.file_size)} | 📅 ${new Date(q.submitted_at).toLocaleString()}</small>
-                        <br><span style="color:#ed8936;">⏳ Menunggu verifikasi admin</span>
-                    </div>
-                `).join('');
-            }
+            const pendingQueues = data.queues.filter(q => q.status === 'pending');
+            if (pendingQueues.length === 0) html += '<p>Tidak ada file dalam antrean</p>';
+            else html += pendingQueues.map(q => `<div style="background:#fef5e7; padding:1rem; margin-bottom:0.5rem; border-radius:10px;"><strong>${escapeHtml(q.original_name)}</strong><br><small>📦 ${formatFileSize(q.file_size)}</small><br><span style="color:#ed8936;">⏳ Menunggu verifikasi admin</span></div>`).join('');
             
-            // File yang sudah disetujui
-            html += '<h4 style="margin-top:1.5rem;"><i class="fas fa-check-circle"></i> File Saya yang Disetujui</h4>';
-            if (data.approved.length === 0) {
-                html += '<p style="color:#718096;">Belum ada file yang disetujui</p>';
-            } else {
-                html += data.approved.map(f => `
-                    <div style="background:#e6f7e6; padding:1rem; margin-bottom:0.5rem; border-radius:10px;">
-                        <div style="display:flex; justify-content:space-between; align-items:start; flex-wrap:wrap; gap:0.5rem;">
-                            <div style="flex:1;">
-                                <strong>${escapeHtml(f.original_name)}</strong>
-                                ${f.description ? `<br><small>📝 ${escapeHtml(f.description)}</small>` : ''}
-                                <br><small>📦 ${formatFileSize(f.size)} | ⬇️ ${f.download_count} downloads</small>
-                            </div>
-                            <div style="display:flex; gap:0.5rem;">
-                                <button class="edit-btn" style="padding:0.3rem 0.8rem; font-size:0.7rem;" onclick="openEditModalFromUploads('${f.id}', '${escapeHtml(f.original_name)}', '${escapeHtml(f.description || '')}', '${f.category}')">✏️ Edit</button>
-                                <button class="delete-btn" style="padding:0.3rem 0.8rem; font-size:0.7rem;" onclick="deleteOwnFile('${f.id}')">🗑️ Hapus</button>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            }
+            html += '<h4 style="margin-top:1rem;"><i class="fas fa-check-circle"></i> File Saya yang Disetujui</h4>';
+            if (data.approved.length === 0) html += '<p>Belum ada file yang disetujui</p>';
+            else html += data.approved.map(f => `<div style="background:#e6f7e6; padding:1rem; margin-bottom:0.5rem; border-radius:10px;"><div><strong>${escapeHtml(f.original_name)}</strong><br><small>📦 ${formatFileSize(f.size)} | ⬇️ ${f.download_count} downloads</small></div></div>`).join('');
             
-            // File yang ditolak
-            html += '<h4 style="margin-top:1.5rem;"><i class="fas fa-times-circle"></i> File Ditolak</h4>';
-            if (data.rejected.length === 0) {
-                html += '<p style="color:#718096;">Tidak ada file yang ditolak</p>';
-            } else {
-                html += data.rejected.map(r => `
-                    <div style="background:#fee; padding:1rem; margin-bottom:0.5rem; border-radius:10px;">
-                        <strong>${escapeHtml(r.original_name)}</strong>
-                        ${r.description ? `<br><small>📝 ${escapeHtml(r.description)}</small>` : ''}
-                        <br><small>📦 ${formatFileSize(r.file_size)}</small>
-                        <br><span style="color:#f56565;">❌ Alasan: ${escapeHtml(r.reject_reason)}</span>
-                    </div>
-                `).join('');
-            }
+            html += '<h4 style="margin-top:1rem;"><i class="fas fa-times-circle"></i> File Ditolak</h4>';
+            if (data.rejected.length === 0) html += '<p>Tidak ada file yang ditolak</p>';
+            else html += data.rejected.map(r => `<div style="background:#fee; padding:1rem; margin-bottom:0.5rem; border-radius:10px;"><strong>${escapeHtml(r.original_name)}</strong><br><span style="color:#f56565;">Alasan: ${escapeHtml(r.reject_reason)}</span></div>`).join('');
             
             html += '</div>';
-            
-            // Hapus modal yang sudah ada sebelumnya
-            const existingModal = document.querySelector('.modal:not(#loginModal):not(#uploadModal):not(#editModal):not(#reportModal)');
-            if (existingModal) existingModal.remove();
             
             const modal = document.createElement('div');
             modal.className = 'modal';
             modal.style.display = 'flex';
             modal.innerHTML = `<div class="modal-content" style="max-width:600px;"><div class="modal-header"><h3><i class="fas fa-folder-open"></i> Upload Saya</h3><span class="close-modal" onclick="this.closest(\'.modal\').remove()">&times;</span></div>${html}</div>`;
             document.body.appendChild(modal);
-        } catch (err) { 
-            showToast('Gagal memuat data: ' + err.message, true); 
-        }
-    }
-
-    function openEditModalFromUploads(fileId, fileName, description, category) {
-        // Tutup modal Upload Saya terlebih dahulu
-        const modals = document.querySelectorAll('.modal');
-        modals.forEach(m => {
-            if (m.id !== 'editModal' && m.id !== 'reportModal' && m.id !== 'loginModal' && m.id !== 'uploadModal') {
-                m.remove();
-            }
-        });
-        openEditModal(fileId, fileName, description, category);
+        } catch (err) { showToast('Gagal memuat data', true); }
     }
 
     // ============ ADMIN FUNCTIONS ============
@@ -771,12 +672,9 @@
             
             container.innerHTML = `<div>${data.queues.map(q => `
                 <div class="queue-card">
-                    <div class="file-header">
-                        <div class="file-icon">${getFileIcon(q.original_name)}</div>
-                        <div><strong>${escapeHtml(q.original_name)}</strong><br><small>👤 ${escapeHtml(q.uploader_name)} | 📦 ${formatFileSize(q.file_size)}</small></div>
-                    </div>
+                    <div><strong>${escapeHtml(q.original_name)}</strong><br><small>👤 ${escapeHtml(q.uploader_name)} | 📦 ${formatFileSize(q.file_size)}</small></div>
                     ${q.description ? `<div class="file-description">📝 ${escapeHtml(q.description)}</div>` : ''}
-                    <div class="file-actions">
+                    <div class="file-actions" style="margin-top:1rem;">
                         <button class="download-btn" onclick="approveFile(${q.id})">✅ Setujui</button>
                         <button class="delete-btn" onclick="rejectFile(${q.id})">❌ Tolak</button>
                     </div>
@@ -793,8 +691,6 @@
             await apiCall(`/api/admin/approve/${queueId}`, { method: 'POST' }); 
             showToast('✅ File disetujui!'); 
             showPendingQueue();
-            // Refresh data di "Upload Saya" jika terbuka
-            refreshFiles();
         } catch (err) { showToast(err.message, true); }
     }
 
@@ -804,7 +700,6 @@
             await apiCall(`/api/admin/reject/${queueId}`, { method: 'POST', body: JSON.stringify({ reason: 'Ditolak oleh admin' }) }); 
             showToast('❌ File ditolak'); 
             showPendingQueue(); 
-            refreshFiles();
         } catch (err) { showToast(err.message, true); }
     }
 
@@ -820,11 +715,7 @@
             
             container.innerHTML = `<div>${data.reports.map(r => `
                 <div class="report-card">
-                    <div>
-                        <strong>📄 ${escapeHtml(r.file_name || 'File sudah dihapus')}</strong><br>
-                        <small>👤 Dilaporkan oleh: ${escapeHtml(r.reporter_name)}</small><br>
-                        <strong>🚩 Alasan:</strong> ${escapeHtml(r.reason)}
-                    </div>
+                    <div><strong>📄 ${escapeHtml(r.file_name || 'File sudah dihapus')}</strong><br><small>👤 Dilaporkan oleh: ${escapeHtml(r.reporter_name)}</small><br><strong>🚩 Alasan:</strong> ${escapeHtml(r.reason)}</div>
                     <div class="file-actions" style="margin-top:1rem;">
                         <button class="download-btn" onclick="deleteFileFromReport('${r.file_id}', '${r.id}')">🗑️ Hapus File</button>
                         <button class="delete-btn" onclick="ignoreReport('${r.id}')">👁️ Abaikan</button>
@@ -858,10 +749,7 @@
 
     // ============ MODAL FUNCTIONS ============
     function showLoginModal() { document.getElementById('loginModal').style.display = 'flex'; }
-    function closeModal(id) { 
-        const modal = document.getElementById(id);
-        if (modal) modal.style.display = 'none';
-    }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function showLoginForm() { 
         document.getElementById('loginFormDiv').style.display = 'block'; 
         document.getElementById('registerFormDiv').style.display = 'none'; 
@@ -880,23 +768,6 @@
     loadFiles();
     loadStats();
     initSocket();
-async function manualBackup() {
-    if (!confirm('Lakukan backup sekarang?')) return;
-    try {
-        const response = await fetch(API_BASE + '/api/admin/backup', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await response.json();
-        if (data.success) {
-            showToast('✅ Backup berhasil! Data tersimpan di GitHub');
-        } else {
-            showToast('❌ Backup gagal: ' + data.error, true);
-        }
-    } catch (err) {
-        showToast('Error: ' + err.message, true);
-    }
-}
 </script>
 </body>
 </html>
