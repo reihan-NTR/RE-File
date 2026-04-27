@@ -17,20 +17,7 @@
       "created_at": "2026-04-27T01:52:47.363Z"
     }
   ],
-  "files": [
-    {
-      "id": "file_1777268062735_zyj2zw0v",
-      "original_name": "Screenshot (17).png",
-      "stored_name": "uploads/files/file_1777268062735_zyj2zw0v.png",
-      "size": 71098,
-      "mime_type": "image/png",
-      "uploaded_by": 1,
-      "description": "",
-      "category": "Document",
-      "download_count": 0,
-      "uploaded_at": "2026-04-27T05:34:22.737Z"
-    }
-  ],
+  "files": [],
   "upload_queue": [
     {
       "id": 1,
