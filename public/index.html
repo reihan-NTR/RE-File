@@ -47,7 +47,8 @@
         .file-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
         .file-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
         .file-icon { width: 55px; height: 55px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white; }
-        .file-name { font-weight: 700; font-size: 1rem; word-break: break-all; flex: 1; color: #2d3748; }
+        .file-title { font-weight: 700; font-size: 1.1rem; word-break: break-all; flex: 1; color: #2d3748; }
+        .file-name { font-size: 0.8rem; color: #718096; margin-top: 0.2rem; word-break: break-all; }
         .file-description { font-size: 0.85rem; color: #718096; background: #f7fafc; padding: 0.6rem; border-radius: 12px; margin: 0.5rem 0; line-height: 1.4; }
         .file-meta { display: flex; gap: 1rem; font-size: 0.75rem; color: #718096; margin: 0.8rem 0; padding: 0.5rem 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
         .file-meta span { display: flex; align-items: center; gap: 0.3rem; }
@@ -60,12 +61,13 @@
         .fab { position: fixed; bottom: 2rem; right: 2rem; width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 25px rgba(0,0,0,0.3); border: none; font-size: 1.5rem; z-index: 100; transition: all 0.3s; }
         .fab:hover { transform: scale(1.1) rotate(90deg); }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-content { background: white; border-radius: 30px; max-width: 500px; width: 90%; padding: 2rem; max-height: 90vh; overflow-y: auto; }
+        .modal-content { background: white; border-radius: 30px; max-width: 550px; width: 90%; padding: 2rem; max-height: 90vh; overflow-y: auto; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
         .modal-header h3 { font-size: 1.5rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .close-modal { cursor: pointer; font-size: 1.5rem; transition: all 0.3s; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
         .close-modal:hover { background: #f0f0f0; transform: rotate(90deg); }
         .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #4a5568; }
         input, textarea, select { width: 100%; padding: 0.8rem 1rem; border: 2px solid #e2e8f0; border-radius: 12px; font-family: inherit; transition: all 0.3s; }
         input:focus, textarea:focus, select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
         .upload-area { border: 2px dashed #cbd5e0; border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s; background: #f7fafc; }
@@ -92,7 +94,7 @@
 <body>
 
 <nav class="navbar">
-    <div class="logo" onclick="loadFiles()"><i class="fas fa-cloud-upload-alt"></i><a href="index.html">RE-File </a></div>
+    <div class="logo" onclick="loadFiles()"><i class="fas fa-cloud-upload-alt"></i> FileShare</div>
     <div class="nav-links">
         <a onclick="showMyUploads()" id="myUploadsLink" style="display:none;"><i class="fas fa-folder-open"></i> Upload Saya</a>
         <a onclick="showAdminPanel()" id="adminPanelLink" style="display:none;"><i class="fas fa-shield-alt"></i> Admin Panel</a>
@@ -174,24 +176,40 @@
             <div class="form-group"><input type="password" id="regPassword" placeholder="Password (min 6)"></div>
             <button class="btn-primary" onclick="register()"><i class="fas fa-user-plus"></i> Daftar</button>
         </div>
+        <p style="text-align:center; margin-top:1rem; font-size:0.8rem; color:#718096;">Demo: admin / admin123</p>
     </div>
 </div>
 
-<!-- Upload Modal -->
+<!-- Upload Modal dengan Fitur JUDUL -->
 <div id="uploadModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3><i class="fas fa-cloud-upload-alt"></i> Upload File</h3><span class="close-modal" onclick="closeModal('uploadModal')">&times;</span></div>
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
             <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color:#667eea;"></i>
             <p>Klik untuk pilih file</p>
+            <small style="color:#718096;">Tanpa batasan ukuran! 🚀</small>
         </div>
         <input type="file" id="fileInput" style="display:none" onchange="showFileName()">
         <div id="fileNameDisplay" style="margin:0.5rem 0; text-align:center; font-size:0.85rem; color:#48bb78;"></div>
-        <div class="form-group"><textarea id="fileDesc" placeholder="Deskripsi file (opsional)" rows="3"></textarea></div>
+        
+        <!-- FIELD JUDUL -->
         <div class="form-group">
+            <label><i class="fas fa-heading"></i> Judul File</label>
+            <input type="text" id="fileTitle" placeholder="Masukkan judul file (contoh: Tutorial Node.js)" style="width:100%; padding:0.8rem; border:2px solid #e2e8f0; border-radius:12px;">
+        </div>
+        
+        <div class="form-group">
+            <label><i class="fas fa-align-left"></i> Deskripsi</label>
+            <textarea id="fileDesc" placeholder="Deskripsi file (opsional)" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+            <label><i class="fas fa-tag"></i> Kategori</label>
             <select id="fileCat">
-                <option value="Document">📄 Dokumen</option><option value="Image">🖼️ Gambar</option>
-                <option value="Video">🎬 Video</option><option value="Software">⚙️ Software</option><option value="Other">📦 Lainnya</option>
+                <option value="Document">📄 Dokumen</option>
+                <option value="Image">🖼️ Gambar</option>
+                <option value="Video">🎬 Video</option>
+                <option value="Software">⚙️ Software</option>
+                <option value="Other">📦 Lainnya</option>
             </select>
         </div>
         <button class="btn-primary" onclick="uploadFile()"><i class="fas fa-paper-plane"></i> Kirim untuk Verifikasi</button>
@@ -202,13 +220,24 @@
 <!-- Edit Modal -->
 <div id="editModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header"><h3><i class="fas fa-edit"></i> Edit Deskripsi File</h3><span class="close-modal" onclick="closeModal('editModal')">&times;</span></div>
+        <div class="modal-header"><h3><i class="fas fa-edit"></i> Edit File</h3><span class="close-modal" onclick="closeModal('editModal')">&times;</span></div>
         <div id="editFileInfo" style="margin-bottom:1rem;"></div>
-        <div class="form-group"><textarea id="editDescription" rows="3" placeholder="Deskripsi baru..."></textarea></div>
         <div class="form-group">
+            <label><i class="fas fa-heading"></i> Judul File</label>
+            <input type="text" id="editTitle" placeholder="Judul file" style="width:100%; padding:0.8rem; border:2px solid #e2e8f0; border-radius:12px;">
+        </div>
+        <div class="form-group">
+            <label><i class="fas fa-align-left"></i> Deskripsi</label>
+            <textarea id="editDescription" rows="3" placeholder="Deskripsi file..."></textarea>
+        </div>
+        <div class="form-group">
+            <label><i class="fas fa-tag"></i> Kategori</label>
             <select id="editCategory">
-                <option value="Document">📄 Dokumen</option><option value="Image">🖼️ Gambar</option>
-                <option value="Video">🎬 Video</option><option value="Software">⚙️ Software</option><option value="Other">📦 Lainnya</option>
+                <option value="Document">📄 Dokumen</option>
+                <option value="Image">🖼️ Gambar</option>
+                <option value="Video">🎬 Video</option>
+                <option value="Software">⚙️ Software</option>
+                <option value="Other">📦 Lainnya</option>
             </select>
         </div>
         <button class="btn-primary" onclick="saveEdit()"><i class="fas fa-save"></i> Simpan Perubahan</button>
@@ -221,6 +250,7 @@
         <div class="modal-header"><h3><i class="fas fa-flag"></i> Laporkan File</h3><span class="close-modal" onclick="closeModal('reportModal')">&times;</span></div>
         <div id="reportFileInfo" style="margin-bottom:1rem;"></div>
         <div class="form-group">
+            <label>Alasan Report</label>
             <select id="reportReason">
                 <option>Konten tidak pantas</option><option>Melanggar hak cipta</option>
                 <option>File berbahaya/virus</option><option>Konten spam</option><option>Lainnya</option>
@@ -260,7 +290,7 @@
             
             socket.on('new-file', (file) => {
                 console.log('📢 New file real-time:', file.original_name);
-                showToast(`📢 File baru: ${file.original_name} telah ditambahkan!`);
+                showToast(`📢 File baru: ${file.title || file.original_name} telah ditambahkan!`);
                 loadFiles();
                 loadStats();
             });
@@ -461,38 +491,43 @@
     }
 
     function displayFiles(files) {
-        const container = document.getElementById('filesContainer');
-        if (files.length === 0) { 
-            container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h3>Belum Ada File</h3><p>Jadilah yang pertama upload!</p></div>'; 
-            return; 
-        }
-        
-        container.innerHTML = `<div class="files-grid">${files.map(file => {
-            const isOwner = currentUser && file.uploaded_by === currentUser.id;
-            return `
-                <div class="file-card">
-                    <div class="file-header">
-                        <div class="file-icon">${getFileIcon(file.original_name)}</div>
-                        <div class="file-name">${escapeHtml(file.original_name)}${isOwner ? '<span class="owner-badge"><i class="fas fa-user-check"></i> File Saya</span>' : ''}</div>
-                    </div>
-                    ${file.description ? `<div class="file-description"><i class="fas fa-align-left"></i> ${escapeHtml(file.description)}</div>` : ''}
-                    <div class="file-meta">
-                        <span><i class="fas fa-database"></i> ${formatFileSize(file.size)}</span>
-                        <span><i class="fas fa-download"></i> ${file.download_count || 0}</span>
-                        <span><i class="fas fa-calendar"></i> ${new Date(file.uploaded_at).toLocaleDateString()}</span>
-                        <span><i class="fas fa-user"></i> ${escapeHtml(file.uploader_name || 'Unknown')}</span>
-                    </div>
-                    <div class="file-actions">
-                        <button class="download-btn" onclick="downloadFile('${file.id}')"><i class="fas fa-download"></i> Download</button>
-                        ${isOwner ? `
-                            <button class="edit-btn" onclick="openEditModal('${file.id}', '${escapeHtml(file.original_name)}', '${escapeHtml(file.description || '')}', '${file.category}')"><i class="fas fa-edit"></i> Edit</button>
-                            <button class="delete-btn" onclick="deleteOwnFile('${file.id}')"><i class="fas fa-trash"></i> Hapus</button>
-                        ` : `<button class="report-btn" onclick="showReportModal('${file.id}', '${escapeHtml(file.original_name)}')"><i class="fas fa-flag"></i> Report</button>`}
+    const container = document.getElementById('filesContainer');
+    if (files.length === 0) { 
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h3>Belum Ada File</h3><p>Jadilah yang pertama upload!</p></div>'; 
+        return; 
+    }
+    
+    container.innerHTML = `<div class="files-grid">${files.map(file => {
+        const isOwner = currentUser && file.uploaded_by === currentUser.id;
+        // TAMPILKAN JUDUL JIKA ADA, JIKA TIDAK PAKAI NAMA FILE
+        const displayTitle = file.title && file.title.trim() !== '' ? file.title : file.original_name;
+        return `
+            <div class="file-card">
+                <div class="file-header">
+                    <div class="file-icon">${getFileIcon(file.original_name)}</div>
+                    <div>
+                        <div class="file-title">${escapeHtml(displayTitle)}${isOwner ? '<span class="owner-badge"><i class="fas fa-user-check"></i> File Saya</span>' : ''}</div>
+                        <div class="file-name">📄 ${escapeHtml(file.original_name)}</div>
                     </div>
                 </div>
-            `;
-        }).join('')}</div>`;
-    }
+                ${file.description ? `<div class="file-description"><i class="fas fa-align-left"></i> ${escapeHtml(file.description)}</div>` : ''}
+                <div class="file-meta">
+                    <span><i class="fas fa-database"></i> ${formatFileSize(file.size)}</span>
+                    <span><i class="fas fa-download"></i> ${file.download_count || 0}</span>
+                    <span><i class="fas fa-calendar"></i> ${new Date(file.uploaded_at).toLocaleDateString()}</span>
+                    <span><i class="fas fa-user"></i> ${escapeHtml(file.uploader_name || 'Unknown')}</span>
+                </div>
+                <div class="file-actions">
+                    <button class="download-btn" onclick="downloadFile('${file.id}')"><i class="fas fa-download"></i> Download</button>
+                    ${isOwner ? `
+                        <button class="edit-btn" onclick="openEditModal('${file.id}', '${escapeHtml(displayTitle)}', '${escapeHtml(file.description || '')}', '${file.category}')"><i class="fas fa-edit"></i> Edit</button>
+                        <button class="delete-btn" onclick="deleteOwnFile('${file.id}')"><i class="fas fa-trash"></i> Hapus</button>
+                    ` : `<button class="report-btn" onclick="showReportModal('${file.id}', '${escapeHtml(displayTitle)}')"><i class="fas fa-flag"></i> Report</button>`}
+                </div>
+            </div>
+        `;
+    }).join('')}</div>`;
+}
 
     function updateCategories(files) {
         const categories = [...new Set(files.map(f => f.category).filter(c => c))];
@@ -541,6 +576,7 @@
         
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
+        formData.append('title', document.getElementById('fileTitle').value);
         formData.append('description', document.getElementById('fileDesc').value);
         formData.append('category', document.getElementById('fileCat').value);
         
@@ -556,17 +592,19 @@
             showToast('✅ File dikirim untuk verifikasi!');
             closeModal('uploadModal');
             document.getElementById('fileInput').value = '';
+            document.getElementById('fileTitle').value = '';
             document.getElementById('fileDesc').value = '';
             document.getElementById('fileNameDisplay').innerHTML = '';
         } catch (err) { showToast(err.message, true); }
     }
 
     // ============ EDIT & DELETE ============
-    function openEditModal(fileId, fileName, description, category) {
+    function openEditModal(fileId, currentTitle, currentDescription, currentCategory) {
         currentEditFileId = fileId;
-        document.getElementById('editFileInfo').innerHTML = `<strong>📄 ${fileName}</strong>`;
-        document.getElementById('editDescription').value = description;
-        document.getElementById('editCategory').value = category;
+        document.getElementById('editFileInfo').innerHTML = `<strong>📄 Edit File</strong>`;
+        document.getElementById('editTitle').value = currentTitle;
+        document.getElementById('editDescription').value = currentDescription;
+        document.getElementById('editCategory').value = currentCategory;
         document.getElementById('editModal').style.display = 'flex';
     }
 
@@ -575,6 +613,7 @@
             await apiCall(`/api/file/${currentEditFileId}`, {
                 method: 'PUT',
                 body: JSON.stringify({
+                    title: document.getElementById('editTitle').value,
                     description: document.getElementById('editDescription').value,
                     category: document.getElementById('editCategory').value
                 })
@@ -629,11 +668,11 @@
             html += '<h4><i class="fas fa-clock"></i> Menunggu Verifikasi</h4>';
             const pendingQueues = data.queues.filter(q => q.status === 'pending');
             if (pendingQueues.length === 0) html += '<p>Tidak ada file dalam antrean</p>';
-            else html += pendingQueues.map(q => `<div style="background:#fef5e7; padding:1rem; margin-bottom:0.5rem; border-radius:10px;"><strong>${escapeHtml(q.original_name)}</strong><br><small>📦 ${formatFileSize(q.file_size)}</small><br><span style="color:#ed8936;">⏳ Menunggu verifikasi admin</span></div>`).join('');
+            else html += pendingQueues.map(q => `<div style="background:#fef5e7; padding:1rem; margin-bottom:0.5rem; border-radius:10px;"><strong>${escapeHtml(q.title || q.original_name)}</strong><br><small>📦 ${formatFileSize(q.file_size)}</small><br><span style="color:#ed8936;">⏳ Menunggu verifikasi admin</span></div>`).join('');
             
             html += '<h4 style="margin-top:1rem;"><i class="fas fa-check-circle"></i> File Saya yang Disetujui</h4>';
             if (data.approved.length === 0) html += '<p>Belum ada file yang disetujui</p>';
-            else html += data.approved.map(f => `<div style="background:#e6f7e6; padding:1rem; margin-bottom:0.5rem; border-radius:10px;"><div><strong>${escapeHtml(f.original_name)}</strong><br><small>📦 ${formatFileSize(f.size)} | ⬇️ ${f.download_count} downloads</small></div></div>`).join('');
+            else html += data.approved.map(f => `<div style="background:#e6f7e6; padding:1rem; margin-bottom:0.5rem; border-radius:10px;"><div><strong>${escapeHtml(f.title || f.original_name)}</strong><br><small>📦 ${formatFileSize(f.size)} | ⬇️ ${f.download_count} downloads</small></div></div>`).join('');
             
             html += '<h4 style="margin-top:1rem;"><i class="fas fa-times-circle"></i> File Ditolak</h4>';
             if (data.rejected.length === 0) html += '<p>Tidak ada file yang ditolak</p>';
@@ -670,7 +709,7 @@
             
             container.innerHTML = `<div>${data.queues.map(q => `
                 <div class="queue-card">
-                    <div><strong>${escapeHtml(q.original_name)}</strong><br><small>👤 ${escapeHtml(q.uploader_name)} | 📦 ${formatFileSize(q.file_size)}</small></div>
+                    <div><strong>${escapeHtml(q.title || q.original_name)}</strong><br><small>👤 ${escapeHtml(q.uploader_name)} | 📦 ${formatFileSize(q.file_size)}</small></div>
                     ${q.description ? `<div class="file-description">📝 ${escapeHtml(q.description)}</div>` : ''}
                     <div class="file-actions" style="margin-top:1rem;">
                         <button class="download-btn" onclick="approveFile(${q.id})">✅ Setujui</button>

@@ -175,17 +175,45 @@ app.get('/api/files', async (req, res) => {
     let files = [...db.files];
     const { search, category, sort, page = 1, limit = 20 } = req.query;
     
-    if (search) files = files.filter(f => f.original_name.toLowerCase().includes(search.toLowerCase()));
-    if (category && category !== 'all') files = files.filter(f => f.category === category);
-    if (sort === 'downloads') files.sort((a, b) => b.download_count - a.download_count);
-    else files.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at));
+    // FILTER BERDASARKAN SEARCH (NAMA FILE, JUDUL, ATAU DESKRIPSI)
+    if (search) {
+        const searchLower = search.toLowerCase();
+        files = files.filter(f => 
+            f.original_name.toLowerCase().includes(searchLower) ||
+            (f.title && f.title.toLowerCase().includes(searchLower)) ||
+            (f.description && f.description.toLowerCase().includes(searchLower))
+        );
+    }
     
+    // FILTER BERDASARKAN KATEGORI
+    if (category && category !== 'all') {
+        files = files.filter(f => f.category === category);
+    }
+    
+    // SORTING
+    if (sort === 'downloads') {
+        files.sort((a, b) => b.download_count - a.download_count);
+    } else {
+        files.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at));
+    }
+    
+    // AMBIL NAMA UPLOADER
     const users = db.users;
-    const filesWithUploader = files.map(f => ({ ...f, uploader_name: users.find(u => u.id === f.uploaded_by)?.username || 'Unknown' }));
+    const filesWithUploader = files.map(f => ({
+        ...f,
+        uploader_name: users.find(u => u.id === f.uploaded_by)?.username || 'Unknown'
+    }));
+    
+    // PAGINATION
     const start = (parseInt(page) - 1) * parseInt(limit);
     const paginatedFiles = filesWithUploader.slice(start, start + parseInt(limit));
     
-    res.json({ files: paginatedFiles, total_files: files.length, current_page: parseInt(page), total_pages: Math.ceil(files.length / limit) });
+    res.json({
+        files: paginatedFiles,
+        total_files: files.length,
+        current_page: parseInt(page),
+        total_pages: Math.ceil(files.length / limit)
+    });
 });
 
 app.post('/api/download/:id', async (req, res) => {
@@ -245,16 +273,18 @@ app.post('/api/upload/submit', authenticate, upload.single('file'), async (req, 
         const db = readDB();
         const { description, category } = req.body;
         const newQueueItem = {
-            id: db.next_id.queue++,
-            temp_path: req.file.path,
-            original_name: req.file.originalname,
-            file_size: req.file.size,
-            mime_type: req.file.mimetype,
-            uploaded_by: req.user.id,
-            description: description || '',
-            category: category || 'Other',
-            status: 'pending',
-            submitted_at: new Date().toISOString()
+    id: db.next_id.queue++,
+    temp_path: req.file.path,
+    original_name: req.file.originalname,
+    title: req.body.title || '',  // ← TAMBAHKAN INI
+    file_size: req.file.size,
+    mime_type: req.file.mimetype,
+    uploaded_by: req.user.id,
+    description: req.body.description || '',
+    category: req.body.category || 'Other',
+    status: 'pending',
+    submitted_at: new Date().toISOString()
+        
         };
         db.upload_queue.push(newQueueItem);
         writeDB(db);
@@ -301,16 +331,17 @@ app.post('/api/admin/approve/:queueId', authenticate, requireAdmin, async (req, 
     fs.renameSync(queueItem.temp_path, storedPath);
     
     const newFile = {
-        id: fileId,
-        original_name: queueItem.original_name,
-        stored_name: relativePath,
-        size: queueItem.file_size,
-        mime_type: queueItem.mime_type,
-        uploaded_by: queueItem.uploaded_by,
-        description: queueItem.description,
-        category: queueItem.category,
-        download_count: 0,
-        uploaded_at: new Date().toISOString()
+    id: fileId,
+    original_name: queueItem.original_name,
+    title: queueItem.title || '',  // ← TAMBAHKAN INI
+    stored_name: relativePath,
+    size: queueItem.file_size,
+    mime_type: queueItem.mime_type,
+    uploaded_by: queueItem.uploaded_by,
+    description: queueItem.description,
+    category: queueItem.category,
+    download_count: 0,
+    uploaded_at: new Date().toISOString()
     };
     
     db.files.push(newFile);
@@ -425,7 +456,7 @@ app.post('/api/admin/ignore-report/:reportId', authenticate, requireAdmin, async
 // ============ SERVE FRONTEND ============
 // ============ EDIT & DELETE FILE (for owner) ============
 app.put('/api/file/:fileId', authenticate, async (req, res) => {
-    const { description, category } = req.body;
+    const { title, description, category } = req.body;
     const db = readDB();
     const fileIndex = db.files.findIndex(f => f.id === req.params.fileId);
     
@@ -438,6 +469,7 @@ app.put('/api/file/:fileId', authenticate, async (req, res) => {
         return res.status(403).json({ error: 'You can only edit your own files' });
     }
     
+     db.files[fileIndex].title = title || '';
     db.files[fileIndex].description = description || '';
     db.files[fileIndex].category = category || 'Other';
     writeDB(db);
