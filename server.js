@@ -97,6 +97,10 @@ function broadcastFileUpdated(fileId, newData) {
     console.log('📢 Broadcasting file update:', fileId);
     io.emit('file-updated', { id: fileId, ...newData });
 }
+function broadcastFileUpdated(fileId, newData) {
+    console.log('📢 Broadcasting file update:', fileId);
+    io.emit('file-updated', { id: fileId, ...newData });
+}
 
 // ============ AUTH MIDDLEWARE ============
 const authenticate = (req, res, next) => {
@@ -455,70 +459,102 @@ app.post('/api/admin/ignore-report/:reportId', authenticate, requireAdmin, async
 });
 // ============ SERVE FRONTEND ============
 // ============ EDIT & DELETE FILE (for owner) ============
+// ============ EDIT FILE ============
 app.put('/api/file/:fileId', authenticate, async (req, res) => {
-    const { title, description, category } = req.body;
-    const db = readDB();
-    const fileIndex = db.files.findIndex(f => f.id === req.params.fileId);
-    
-    if (fileIndex === -1) {
-        return res.status(404).json({ error: 'File not found' });
+    try {
+        const { title, description, category } = req.body;
+        const db = readDB();
+        const fileId = req.params.fileId;
+        
+        console.log('✏️ Edit request for file:', fileId);
+        console.log('New title:', title);
+        
+        const fileIndex = db.files.findIndex(f => f.id === fileId);
+        
+        if (fileIndex === -1) {
+            return res.status(404).json({ error: 'File not found' });
+        }
+        
+        const file = db.files[fileIndex];
+        
+        // Cek kepemilikan
+        if (file.uploaded_by !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'You can only edit your own files' });
+        }
+        
+        // Update field
+        if (title !== undefined) db.files[fileIndex].title = title;
+        if (description !== undefined) db.files[fileIndex].description = description;
+        if (category !== undefined) db.files[fileIndex].category = category;
+        
+        writeDB(db);
+        
+        // Broadcast update
+        broadcastFileUpdated(fileId, { title, description, category });
+        
+        console.log('✅ File updated successfully');
+        res.json({ success: true, message: 'File updated' });
+        
+    } catch (error) {
+        console.error('❌ Edit error:', error);
+        res.status(500).json({ error: 'Gagal mengedit file: ' + error.message });
     }
-    
-    const file = db.files[fileIndex];
-    if (file.uploaded_by !== req.user.id && req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'You can only edit your own files' });
-    }
-    
-     db.files[fileIndex].title = title || '';
-    db.files[fileIndex].description = description || '';
-    db.files[fileIndex].category = category || 'Other';
-    writeDB(db);
-    
-    // 📢 BROADCAST UPDATE
-    broadcastFileUpdated(req.params.fileId, { description, category });
-    
-    res.json({ success: true, message: 'File updated' });
 });
 
 // ============ TAMBAHKAN ROUTE DELETE INI ============
+// ============ DELETE FILE ============
 app.delete('/api/file/:fileId', authenticate, async (req, res) => {
     try {
         const db = readDB();
         const fileId = req.params.fileId;
         
+        console.log('🗑️ Delete request for file:', fileId);
+        console.log('User:', req.user?.username, '(ID:', req.user?.id, ')');
+        
+        // Cari file
         const fileIndex = db.files.findIndex(f => f.id === fileId);
         
         if (fileIndex === -1) {
+            console.log('❌ File not found in database');
             return res.status(404).json({ error: 'File tidak ditemukan' });
         }
         
         const file = db.files[fileIndex];
         
+        // Cek apakah user adalah pemilik file atau admin
         if (file.uploaded_by !== req.user.id && req.user.role !== 'admin') {
+            console.log('❌ Unauthorized: User is not owner');
             return res.status(403).json({ error: 'Anda hanya bisa menghapus file sendiri' });
         }
         
-        // Hapus file fisik
+        // Hapus file fisik dari disk
         let filePath = file.stored_name;
         if (!path.isAbsolute(filePath)) {
             filePath = path.join(__dirname, file.stored_name);
         }
         
+        console.log('📁 Looking for file at:', filePath);
+        
         if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath);
+            console.log('✅ File deleted from disk');
+        } else {
+            console.log('⚠️ File not found on disk, but removing from database');
         }
         
+        // Hapus dari database
         db.files.splice(fileIndex, 1);
         writeDB(db);
         
-        // 📢 BROADCAST KE SEMUA USER
+        // Broadcast ke semua user
         broadcastFileDeleted(fileId);
         
+        console.log('✅ File removed from database');
         res.json({ success: true, message: 'File berhasil dihapus' });
         
     } catch (error) {
-        console.error('Delete error:', error);
-        res.status(500).json({ error: 'Gagal menghapus file' });
+        console.error('❌ Delete error:', error);
+        res.status(500).json({ error: 'Gagal menghapus file: ' + error.message });
     }
 });
 app.use(express.static('public'));
