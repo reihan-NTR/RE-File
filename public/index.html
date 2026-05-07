@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FileShare | Platform Berbagi File</title>
+    <title>RE-File | Platform Berbagi File</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="/socket.io/socket.io.js"></script>
     <style>
@@ -42,13 +42,14 @@
         .categories { display: inline-flex; gap: 0.8rem; }
         .category-pill { background: rgba(255,255,255,0.2); color: white; padding: 0.6rem 1.5rem; border-radius: 50px; cursor: pointer; transition: all 0.3s; font-size: 0.9rem; font-weight: 500; backdrop-filter: blur(5px); display: inline-flex; align-items: center; gap: 0.5rem; }
         .category-pill:hover, .category-pill.active { background: white; color: #667eea; transform: translateY(-2px); }
-        .files-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem; }
+        .files-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1.5rem; }
         .file-card { background: white; border-radius: 20px; padding: 1.5rem; transition: all 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         .file-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
         .file-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
         .file-icon { width: 55px; height: 55px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white; }
-        .file-title { font-weight: 700; font-size: 1.1rem; word-break: break-all; flex: 1; color: #2d3748; }
-        .file-name { font-size: 0.8rem; color: #718096; margin-top: 0.2rem; word-break: break-all; }
+        .file-info { flex: 1; }
+        .file-title { font-weight: 700; font-size: 1rem; color: #2d3748; word-break: break-all; }
+        .file-name { font-size: 0.75rem; color: #718096; margin-top: 0.2rem; word-break: break-all; }
         .file-description { font-size: 0.85rem; color: #718096; background: #f7fafc; padding: 0.6rem; border-radius: 12px; margin: 0.5rem 0; line-height: 1.4; }
         .file-meta { display: flex; gap: 1rem; font-size: 0.75rem; color: #718096; margin: 0.8rem 0; padding: 0.5rem 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
         .file-meta span { display: flex; align-items: center; gap: 0.3rem; }
@@ -74,6 +75,7 @@
         .upload-area:hover { border-color: #667eea; background: #edf2f7; }
         .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0.8rem; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.3s; }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
+        .btn-secondary { background: #a0aec0; color: white; border: none; padding: 0.8rem; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 0.5rem; }
         .toggle-buttons { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
         .toggle-btn { flex: 1; padding: 0.6rem; border: none; border-radius: 50px; cursor: pointer; background: #e2e8f0; transition: all 0.3s; font-weight: 500; }
         .toggle-btn.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
@@ -82,19 +84,24 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: white; padding: 0.8rem 1.5rem; border-radius: 50px; display: none; z-index: 3000; box-shadow: 0 10px 30px rgba(0,0,0,0.2); font-weight: 500; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-        .empty-state { text-align: center; padding: 4rem; background: white; border-radius: 30px; color: #a0aec0; }
+        .empty-state { text-align: center; padding: 3rem; background: white; border-radius: 30px; color: #a0aec0; }
         .owner-badge { background: #48bb78; color: white; font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 50px; margin-left: 0.5rem; }
         .admin-tabs { background: white; border-radius: 20px; padding: 0.5rem; margin-bottom: 2rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .admin-tab { flex: 1; padding: 1rem; border: none; border-radius: 15px; cursor: pointer; background: #f7fafc; transition: all 0.3s; font-weight: 600; }
+        .admin-tab { flex: 1; padding: 0.8rem; border: none; border-radius: 15px; cursor: pointer; background: #f7fafc; transition: all 0.3s; font-weight: 600; }
         .admin-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
-        .queue-card, .report-card { background: white; border-radius: 20px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 4px solid #ed8936; }
+        .queue-card { background: white; border-radius: 20px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 4px solid #ed8936; }
+        .queue-card-edit { border-left-color: #4299e1; }
+        .queue-card-delete { border-left-color: #f56565; }
+        .badge-count { background: #f56565; color: white; border-radius: 50px; padding: 0.2rem 0.6rem; font-size: 0.7rem; margin-left: 0.5rem; }
+        .diff-old { color: #f56565; text-decoration: line-through; }
+        .diff-new { color: #48bb78; }
         @media (max-width: 768px) { .container { padding: 1rem; } .stats-grid { grid-template-columns: repeat(2, 1fr); } .files-grid { grid-template-columns: 1fr; } .fab { width: 55px; height: 55px; bottom: 1rem; right: 1rem; } }
     </style>
 </head>
 <body>
 
 <nav class="navbar">
-    <div class="logo" onclick="loadFiles()"><i class="fas fa-cloud-upload-alt"></i><a href="index.html">RE-File</a></div>
+    <div class="logo" onclick="loadFiles()"><i class="fas fa-cloud-upload-alt"></i> <a href="index.html">RE-File</a></div>
     <div class="nav-links">
         <a onclick="showMyUploads()" id="myUploadsLink" style="display:none;"><i class="fas fa-folder-open"></i> Upload Saya</a>
         <a onclick="showAdminPanel()" id="adminPanelLink" style="display:none;"><i class="fas fa-shield-alt"></i> Admin Panel</a>
@@ -108,7 +115,6 @@
 <div class="container">
     <div class="hero" id="heroSection">
         <h1><i class="fas fa-share-alt"></i> Bagikan & Unduh File Gratis</h1>
-        <p>Upload file sebesar apapun! Real-time update ketika ada file baru</p>
     </div>
 
     <div class="search-wrapper">
@@ -137,8 +143,10 @@
 
     <div id="adminPanel" style="display:none;">
         <div class="admin-tabs">
-            <button class="admin-tab active" onclick="showPendingQueue()"><i class="fas fa-clock"></i> Verifikasi Upload</button>
-            <button class="admin-tab" onclick="showReportsList()"><i class="fas fa-flag"></i> Laporan User</button>
+            <button class="admin-tab" onclick="showPendingQueue()">📤 Upload Baru <span id="pendingQueueBadge" class="badge-count" style="display:none;">0</span></button>
+            <button class="admin-tab" onclick="showPendingEdits()">✏️ Request Edit <span id="pendingEditBadge" class="badge-count" style="display:none;">0</span></button>
+            <button class="admin-tab" onclick="showPendingDeletes()">🗑️ Request Hapus <span id="pendingDeleteBadge" class="badge-count" style="display:none;">0</span></button>
+            <button class="admin-tab" onclick="showReportsList()">🚩 Laporan <span id="pendingReportBadge" class="badge-count" style="display:none;">0</span></button>
         </div>
         <div id="adminContent"></div>
     </div>
@@ -179,21 +187,21 @@
     </div>
 </div>
 
-<!-- Upload Modal dengan Fitur JUDUL -->
+<!-- Upload Modal -->
 <div id="uploadModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3><i class="fas fa-cloud-upload-alt"></i> Upload File</h3><span class="close-modal" onclick="closeModal('uploadModal')">&times;</span></div>
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
             <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color:#667eea;"></i>
             <p>Klik untuk pilih file</p>
+            <small style="color:#718096;">Tanpa batasan ukuran! 🚀</small>
         </div>
         <input type="file" id="fileInput" style="display:none" onchange="showFileName()">
         <div id="fileNameDisplay" style="margin:0.5rem 0; text-align:center; font-size:0.85rem; color:#48bb78;"></div>
         
-        <!-- FIELD JUDUL -->
         <div class="form-group">
             <label><i class="fas fa-heading"></i> Judul File</label>
-            <input type="text" id="fileTitle" placeholder="Masukkan judul file (contoh: Tutorial Node.js)" style="width:100%; padding:0.8rem; border:2px solid #e2e8f0; border-radius:12px;">
+            <input type="text" id="fileTitle" placeholder="Masukkan judul file (contoh: Tutorial Node.js)">
         </div>
         
         <div class="form-group">
@@ -215,21 +223,21 @@
     </div>
 </div>
 
-<!-- Edit Modal -->
+<!-- Edit Modal (untuk request edit ke admin) -->
 <div id="editModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3><i class="fas fa-edit"></i> Edit File</h3><span class="close-modal" onclick="closeModal('editModal')">&times;</span></div>
-        <div id="editFileInfo" style="margin-bottom:1rem;"></div>
+        <div id="editFileInfo" style="margin-bottom:1rem; padding:0.5rem; background:#fef5e7; border-radius:10px;"></div>
         <div class="form-group">
-            <label><i class="fas fa-heading"></i> Judul File</label>
-            <input type="text" id="editTitle" placeholder="Judul file" style="width:100%; padding:0.8rem; border:2px solid #e2e8f0; border-radius:12px;">
+            <label><i class="fas fa-heading"></i> Judul Baru</label>
+            <input type="text" id="editTitle" placeholder="Judul file">
         </div>
         <div class="form-group">
-            <label><i class="fas fa-align-left"></i> Deskripsi</label>
+            <label><i class="fas fa-align-left"></i> Deskripsi Baru</label>
             <textarea id="editDescription" rows="3" placeholder="Deskripsi file..."></textarea>
         </div>
         <div class="form-group">
-            <label><i class="fas fa-tag"></i> Kategori</label>
+            <label><i class="fas fa-tag"></i> Kategori Baru</label>
             <select id="editCategory">
                 <option value="Document">📄 Dokumen</option>
                 <option value="Image">🖼️ Gambar</option>
@@ -238,7 +246,8 @@
                 <option value="Other">📦 Lainnya</option>
             </select>
         </div>
-        <button class="btn-primary" onclick="saveEdit()"><i class="fas fa-save"></i> Simpan Perubahan</button>
+        <button class="btn-primary" onclick="submitEditRequest()"><i class="fas fa-paper-plane"></i> Kirim ke Admin untuk Verifikasi</button>
+        <p style="font-size:0.7rem; text-align:center; margin-top:0.5rem; color:#718096;">Perubahan akan diverifikasi oleh admin terlebih dahulu</p>
     </div>
 </div>
 
@@ -267,54 +276,23 @@
     let token = localStorage.getItem('token');
     let currentUser = null;
     let currentEditFileId = null;
+    let currentEditFileTitle = '';
     let currentReportFileId = null;
     let socket = null;
 
     // ============ SOCKET.IO REAL-TIME ============
     function initSocket() {
         try {
-            socket = io({
-                transports: ['websocket', 'polling'],
-                reconnection: true,
-                reconnectionAttempts: 5
-            });
-            
+            socket = io({ transports: ['websocket', 'polling'], reconnection: true, reconnectionAttempts: 5 });
             socket.on('connect', () => {
                 console.log('🔌 Real-time connected');
-                if (currentUser && currentUser.id) {
-                    socket.emit('register-user', currentUser.id);
-                }
+                if (currentUser && currentUser.id) socket.emit('register-user', currentUser.id);
             });
-            
-            socket.on('new-file', (file) => {
-                console.log('📢 New file real-time:', file.original_name);
-                showToast(`📢 File baru: ${file.title || file.original_name} telah ditambahkan!`);
-                loadFiles();
-                loadStats();
-            });
-            
-            socket.on('file-deleted', (fileId) => {
-                console.log('📢 File deleted real-time:', fileId);
-                showToast(`🗑️ Sebuah file telah dihapus`);
-                loadFiles();
-                loadStats();
-            });
-            
-            socket.on('file-updated', (data) => {
-                console.log('📢 File updated real-time:', data.id);
-                loadFiles();
-            });
-            
-            socket.on('disconnect', () => {
-                console.log('🔌 Real-time disconnected');
-            });
-            
-            socket.on('connect_error', (err) => {
-                console.log('Socket connection error:', err.message);
-            });
-        } catch (err) {
-            console.log('Socket init error:', err);
-        }
+            socket.on('new-file', (file) => { console.log('📢 New file:', file.original_name); showToast(`📢 File baru: ${file.title || file.original_name} telah ditambahkan!`); loadFiles(); loadStats(); });
+            socket.on('file-deleted', (fileId) => { console.log('📢 File deleted:', fileId); showToast(`🗑️ Sebuah file telah dihapus`); loadFiles(); loadStats(); });
+            socket.on('file-updated', (data) => { console.log('📢 File updated:', data.id); loadFiles(); });
+            socket.on('connect_error', (err) => console.log('Socket error:', err.message));
+        } catch (err) { console.log('Socket init error:', err); }
     }
 
     // ============ HELPER FUNCTIONS ============
@@ -336,7 +314,7 @@
 
     function getFileIcon(filename) {
         const ext = filename.split('.').pop().toLowerCase();
-        const icons = { pdf: '📄', jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️', mp4: '🎬', mkv: '🎬', avi: '🎬', zip: '📦', rar: '📦', exe: '⚙️', doc: '📝', docx: '📝', txt: '📝' };
+        const icons = { pdf: '📄', jpg: '🖼️', png: '🖼️', mp4: '🎬', zip: '📦', exe: '⚙️', doc: '📝', txt: '📝' };
         return icons[ext] || '📁';
     }
 
@@ -352,7 +330,6 @@
         return icons[category] || '📁';
     }
 
-    // ============ API CALLS ============
     async function apiCall(url, options = {}) {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -377,9 +354,7 @@
             myUploadsLink.style.display = 'inline';
             usernameDisplay.textContent = currentUser.username;
             adminPanelLink.style.display = currentUser.role === 'admin' ? 'inline' : 'none';
-            if (socket && socket.connected && currentUser.id) {
-                socket.emit('register-user', currentUser.id);
-            }
+            if (socket && socket.connected && currentUser.id) socket.emit('register-user', currentUser.id);
         } else {
             loginLink.style.display = 'inline';
             logoutLink.style.display = 'none';
@@ -392,27 +367,22 @@
         const username = document.getElementById('loginUsername').value;
         const password = document.getElementById('loginPassword').value;
         if (!username || !password) { showToast('Isi username dan password', true); return; }
-        
         try {
             const response = await fetch(API_BASE + '/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.error);
-            
             localStorage.setItem('token', data.token);
             localStorage.setItem('user', JSON.stringify(data.user));
             token = data.token;
             currentUser = data.user;
-            
             updateUI();
             closeModal('loginModal');
             showToast(`Selamat datang, ${username}!`);
             loadFiles();
             loadStats();
-            
             document.getElementById('loginUsername').value = '';
             document.getElementById('loginPassword').value = '';
         } catch (err) { showToast(err.message, true); }
@@ -422,22 +392,17 @@
         const username = document.getElementById('regUsername').value;
         const email = document.getElementById('regEmail').value;
         const password = document.getElementById('regPassword').value;
-        
         if (!username || !email || !password) { showToast('Semua field harus diisi', true); return; }
         if (password.length < 6) { showToast('Password minimal 6 karakter', true); return; }
-        
         try {
             const response = await fetch(API_BASE + '/api/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, email, password })
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.error);
-            
             showToast('Registrasi berhasil! Silakan login.');
             showLoginForm();
-            
             document.getElementById('regUsername').value = '';
             document.getElementById('regEmail').value = '';
             document.getElementById('regPassword').value = '';
@@ -467,16 +432,13 @@
         const search = document.getElementById('searchInput').value;
         const category = document.getElementById('categoryFilter').value;
         const sort = document.getElementById('sortFilter').value;
-        
         try {
             const response = await fetch(API_BASE + `/api/files?search=${encodeURIComponent(search)}&category=${category}&sort=${sort}`);
             const data = await response.json();
             document.getElementById('totalFiles').textContent = data.total_files || 0;
             displayFiles(data.files || []);
             updateCategories(data.files || []);
-        } catch (err) { 
-            document.getElementById('filesContainer').innerHTML = '<div class="empty-state">❌ Gagal memuat file</div>';
-        }
+        } catch (err) { document.getElementById('filesContainer').innerHTML = '<div class="empty-state">❌ Gagal memuat file</div>'; }
     }
 
     async function loadStats() {
@@ -485,47 +447,45 @@
             const data = await response.json();
             document.getElementById('totalDownloads').textContent = data.total_downloads || 0;
             document.getElementById('totalUsers').textContent = data.total_users || 0;
-        } catch (err) {}
+        } catch (err) { console.error('Stats error:', err); }
     }
 
     function displayFiles(files) {
-    const container = document.getElementById('filesContainer');
-    if (files.length === 0) { 
-        container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h3>Belum Ada File</h3><p>Jadilah yang pertama upload!</p></div>'; 
-        return; 
-    }
-    
-    container.innerHTML = `<div class="files-grid">${files.map(file => {
-        const isOwner = currentUser && file.uploaded_by === currentUser.id;
-        // TAMPILKAN JUDUL JIKA ADA, JIKA TIDAK PAKAI NAMA FILE
-        const displayTitle = file.title && file.title.trim() !== '' ? file.title : file.original_name;
-        return `
-            <div class="file-card">
-                <div class="file-header">
-                    <div class="file-icon">${getFileIcon(file.original_name)}</div>
-                    <div>
-                        <div class="file-title">${escapeHtml(displayTitle)}${isOwner ? '<span class="owner-badge"><i class="fas fa-user-check"></i> File Saya</span>' : ''}</div>
-                        <div class="file-name">📄 ${escapeHtml(file.original_name)}</div>
+        const container = document.getElementById('filesContainer');
+        if (files.length === 0) { 
+            container.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h3>Belum Ada File</h3><p>Jadilah yang pertama upload!</p></div>'; 
+            return; 
+        }
+        container.innerHTML = `<div class="files-grid">${files.map(file => {
+            const isOwner = currentUser && file.uploaded_by === currentUser.id;
+            const displayTitle = file.title && file.title.trim() !== '' ? file.title : file.original_name;
+            return `
+                <div class="file-card">
+                    <div class="file-header">
+                        <div class="file-icon">${getFileIcon(file.original_name)}</div>
+                        <div class="file-info">
+                            <div class="file-title">${escapeHtml(displayTitle)}${isOwner ? '<span class="owner-badge"><i class="fas fa-user-check"></i> File Saya</span>' : ''}</div>
+                            <div class="file-name">📄 ${escapeHtml(file.original_name)}</div>
+                        </div>
+                    </div>
+                    ${file.description ? `<div class="file-description"><i class="fas fa-align-left"></i> ${escapeHtml(file.description)}</div>` : ''}
+                    <div class="file-meta">
+                        <span><i class="fas fa-database"></i> ${formatFileSize(file.size)}</span>
+                        <span><i class="fas fa-download"></i> ${file.download_count || 0}</span>
+                        <span><i class="fas fa-calendar"></i> ${new Date(file.uploaded_at).toLocaleDateString()}</span>
+                        <span><i class="fas fa-user"></i> ${escapeHtml(file.uploader_name || 'Unknown')}</span>
+                    </div>
+                    <div class="file-actions">
+                        <button class="download-btn" onclick="downloadFile('${file.id}')"><i class="fas fa-download"></i> Download</button>
+                        ${isOwner ? `
+                            <button class="edit-btn" onclick="openEditRequestModal('${file.id}', '${escapeHtml(displayTitle)}', '${escapeHtml(file.description || '')}', '${file.category}')"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="delete-btn" onclick="requestDelete('${file.id}', '${escapeHtml(displayTitle)}')"><i class="fas fa-trash"></i> Hapus</button>
+                        ` : `<button class="report-btn" onclick="showReportModal('${file.id}', '${escapeHtml(displayTitle)}')"><i class="fas fa-flag"></i> Report</button>`}
                     </div>
                 </div>
-                ${file.description ? `<div class="file-description"><i class="fas fa-align-left"></i> ${escapeHtml(file.description)}</div>` : ''}
-                <div class="file-meta">
-                    <span><i class="fas fa-database"></i> ${formatFileSize(file.size)}</span>
-                    <span><i class="fas fa-download"></i> ${file.download_count || 0}</span>
-                    <span><i class="fas fa-calendar"></i> ${new Date(file.uploaded_at).toLocaleDateString()}</span>
-                    <span><i class="fas fa-user"></i> ${escapeHtml(file.uploader_name || 'Unknown')}</span>
-                </div>
-                <div class="file-actions">
-                    <button class="download-btn" onclick="downloadFile('${file.id}')"><i class="fas fa-download"></i> Download</button>
-                    ${isOwner ? `
-                        <button class="edit-btn" onclick="openEditModal('${file.id}', '${escapeHtml(displayTitle)}', '${escapeHtml(file.description || '')}', '${file.category}')"><i class="fas fa-edit"></i> Edit</button>
-                        <button class="delete-btn" onclick="deleteOwnFile('${file.id}')"><i class="fas fa-trash"></i> Hapus</button>
-                    ` : `<button class="report-btn" onclick="showReportModal('${file.id}', '${escapeHtml(displayTitle)}')"><i class="fas fa-flag"></i> Report</button>`}
-                </div>
-            </div>
-        `;
-    }).join('')}</div>`;
-}
+            `;
+        }).join('')}</div>`;
+    }
 
     function updateCategories(files) {
         const categories = [...new Set(files.map(f => f.category).filter(c => c))];
@@ -571,22 +531,17 @@
     async function uploadFile() {
         const fileInput = document.getElementById('fileInput');
         if (!fileInput.files || !fileInput.files[0]) { showToast('Pilih file terlebih dahulu', true); return; }
-        
         const formData = new FormData();
         formData.append('file', fileInput.files[0]);
         formData.append('title', document.getElementById('fileTitle').value);
         formData.append('description', document.getElementById('fileDesc').value);
         formData.append('category', document.getElementById('fileCat').value);
-        
         try {
             const response = await fetch(API_BASE + '/api/upload/submit', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
+                method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.error);
-            
             showToast('✅ File dikirim untuk verifikasi!');
             closeModal('uploadModal');
             document.getElementById('fileInput').value = '';
@@ -596,38 +551,46 @@
         } catch (err) { showToast(err.message, true); }
     }
 
-    // ============ EDIT & DELETE ============
-    function openEditModal(fileId, currentTitle, currentDescription, currentCategory) {
+    // ============ EDIT REQUEST (Verifikasi Admin) ============
+    function openEditRequestModal(fileId, currentTitle, currentDescription, currentCategory) {
         currentEditFileId = fileId;
-        document.getElementById('editFileInfo').innerHTML = `<strong>📄 Edit File</strong>`;
+        currentEditFileTitle = currentTitle;
+        document.getElementById('editFileInfo').innerHTML = `<strong>✏️ Edit File</strong><br><small>File: ${currentTitle}<br>Perubahan akan diverifikasi oleh admin terlebih dahulu</small>`;
         document.getElementById('editTitle').value = currentTitle;
         document.getElementById('editDescription').value = currentDescription;
         document.getElementById('editCategory').value = currentCategory;
         document.getElementById('editModal').style.display = 'flex';
     }
 
-    async function saveEdit() {
+    async function submitEditRequest() {
         try {
-            await apiCall(`/api/file/${currentEditFileId}`, {
-                method: 'PUT',
+            const response = await fetch(API_BASE + `/api/file/edit-request/${currentEditFileId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
                     title: document.getElementById('editTitle').value,
                     description: document.getElementById('editDescription').value,
                     category: document.getElementById('editCategory').value
                 })
             });
-            showToast('✅ File berhasil diupdate!');
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+            showToast('✅ Edit request dikirim ke admin untuk verifikasi!');
             closeModal('editModal');
-            loadFiles();
         } catch (err) { showToast(err.message, true); }
     }
 
-    async function deleteOwnFile(fileId) {
-        if (!confirm('Yakin ingin menghapus file ini?')) return;
+    // ============ DELETE REQUEST (Verifikasi Admin) ============
+    async function requestDelete(fileId, fileName) {
+        if (!confirm(`Apakah Anda yakin ingin menghapus file "${fileName}"?\n\nFile akan dihapus setelah disetujui oleh admin.`)) return;
         try {
-            await apiCall(`/api/file/${fileId}`, { method: 'DELETE' });
-            showToast('✅ File berhasil dihapus!');
-            loadFiles();
+            const response = await fetch(API_BASE + `/api/file/delete-request/${fileId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+            showToast('✅ Delete request dikirim ke admin untuk verifikasi!');
         } catch (err) { showToast(err.message, true); }
     }
 
@@ -658,26 +621,20 @@
     // ============ MY UPLOADS ============
     async function showMyUploads() {
         if (!currentUser) { showToast('Login dulu', true); showLoginModal(); return; }
-        
         try {
             const data = await apiCall('/api/upload/my-uploads');
             let html = '<div style="max-height:70vh; overflow-y:auto;">';
-            
             html += '<h4><i class="fas fa-clock"></i> Menunggu Verifikasi</h4>';
             const pendingQueues = data.queues.filter(q => q.status === 'pending');
             if (pendingQueues.length === 0) html += '<p>Tidak ada file dalam antrean</p>';
             else html += pendingQueues.map(q => `<div style="background:#fef5e7; padding:1rem; margin-bottom:0.5rem; border-radius:10px;"><strong>${escapeHtml(q.title || q.original_name)}</strong><br><small>📦 ${formatFileSize(q.file_size)}</small><br><span style="color:#ed8936;">⏳ Menunggu verifikasi admin</span></div>`).join('');
-            
             html += '<h4 style="margin-top:1rem;"><i class="fas fa-check-circle"></i> File Saya yang Disetujui</h4>';
             if (data.approved.length === 0) html += '<p>Belum ada file yang disetujui</p>';
             else html += data.approved.map(f => `<div style="background:#e6f7e6; padding:1rem; margin-bottom:0.5rem; border-radius:10px;"><div><strong>${escapeHtml(f.title || f.original_name)}</strong><br><small>📦 ${formatFileSize(f.size)} | ⬇️ ${f.download_count} downloads</small></div></div>`).join('');
-            
             html += '<h4 style="margin-top:1rem;"><i class="fas fa-times-circle"></i> File Ditolak</h4>';
             if (data.rejected.length === 0) html += '<p>Tidak ada file yang ditolak</p>';
             else html += data.rejected.map(r => `<div style="background:#fee; padding:1rem; margin-bottom:0.5rem; border-radius:10px;"><strong>${escapeHtml(r.original_name)}</strong><br><span style="color:#f56565;">Alasan: ${escapeHtml(r.reject_reason)}</span></div>`).join('');
-            
             html += '</div>';
-            
             const modal = document.createElement('div');
             modal.className = 'modal';
             modal.style.display = 'flex';
@@ -692,117 +649,122 @@
         document.getElementById('adminPanel').style.display = 'block';
         document.getElementById('publicSection').style.display = 'none';
         document.getElementById('heroSection').style.display = 'none';
+        await updateAdminBadges();
         showPendingQueue();
     }
 
-    async function showPendingQueue() {
+    async function updateAdminBadges() {
         try {
-            const data = await apiCall('/api/admin/queue');
-            const container = document.getElementById('adminContent');
-            
-            if (data.queues.length === 0) { 
-                container.innerHTML = '<div class="empty-state">✅ Tidak ada file menunggu verifikasi</div>'; 
-                return; 
-            }
-            
-            container.innerHTML = `<div>${data.queues.map(q => `
-                <div class="queue-card">
-                    <div><strong>${escapeHtml(q.title || q.original_name)}</strong><br><small>👤 ${escapeHtml(q.uploader_name)} | 📦 ${formatFileSize(q.file_size)}</small></div>
-                    ${q.description ? `<div class="file-description">📝 ${escapeHtml(q.description)}</div>` : ''}
-                    <div class="file-actions" style="margin-top:1rem;">
-                        <button class="download-btn" onclick="approveFile(${q.id})">✅ Setujui</button>
-                        <button class="delete-btn" onclick="rejectFile(${q.id})">❌ Tolak</button>
-                    </div>
+            const [edits, deletes, reports] = await Promise.all([
+                fetch(API_BASE + '/api/admin/pending-edits', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
+                fetch(API_BASE + '/api/admin/pending-deletes', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
+                fetch(API_BASE + '/api/admin/reports', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json())
+            ]);
+            const editBadge = document.getElementById('pendingEditBadge');
+            const deleteBadge = document.getElementById('pendingDeleteBadge');
+            const reportBadge = document.getElementById('pendingReportBadge');
+            if (edits.edits?.length > 0) { editBadge.style.display = 'inline'; editBadge.textContent = edits.edits.length; } else editBadge.style.display = 'none';
+            if (deletes.deletes?.length > 0) { deleteBadge.style.display = 'inline'; deleteBadge.textContent = deletes.deletes.length; } else deleteBadge.style.display = 'none';
+            if (reports.reports?.length > 0) { reportBadge.style.display = 'inline'; reportBadge.textContent = reports.reports.length; } else reportBadge.style.display = 'none';
+        } catch (err) { console.error('Failed to update badges:', err); }
+    }
+
+    async function showPendingQueue() {
+    try {
+        const data = await apiCall('/api/admin/queue');
+        const container = document.getElementById('adminContent');
+        
+        if (data.queues.length === 0) {
+            container.innerHTML = '<div class="empty-state">✅ Tidak ada file menunggu verifikasi</div>';
+            return;
+        }
+        
+        container.innerHTML = `<div>${data.queues.map(q => `
+            <div class="queue-card">
+                <div><strong>${escapeHtml(q.title || q.original_name)}</strong><br>
+                <small>👤 ${escapeHtml(q.uploader_name)} | 📦 ${formatFileSize(q.file_size)}</small></div>
+                ${q.description ? `<div class="file-description">📝 ${escapeHtml(q.description)}</div>` : ''}
+                <div class="file-actions" style="margin-top:1rem; gap: 0.5rem; display: flex;">
+                    <button class="download-btn" onclick="downloadQueueFile(${q.id})" style="background: #4299e1; flex:1;">
+                        📥 Download (Cek)
+                    </button>
+                    <button class="download-btn" onclick="approveFile(${q.id})" style="flex:1;">✅ Setujui</button>
+                    <button class="delete-btn" onclick="rejectFile(${q.id})" style="flex:1;">❌ Tolak</button>
                 </div>
-            `).join('')}</div>`;
-            
-            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-        } catch (err) { showToast(err.message, true); }
-    }
+            </div>
+        `).join('')}</div>`;
+        
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+        event.target.classList.add('active');
+    } catch (err) { showToast(err.message, true); }
+}
 
-    async function approveFile(queueId) {
-        try { 
-            await apiCall(`/api/admin/approve/${queueId}`, { method: 'POST' }); 
-            showToast('✅ File disetujui!'); 
-            showPendingQueue();
-        } catch (err) { showToast(err.message, true); }
-    }
+// Tambahkan fungsi ini
+async function downloadQueueFile(queueId) {
+    const url = API_BASE + `/api/admin/queue-download/${queueId}`;
+    console.log('Downloading from:', url);
+    window.open(url, '_blank');
+}
 
-    async function rejectFile(queueId) {
-        if (!confirm('Tolak file ini?')) return;
-        try { 
-            await apiCall(`/api/admin/reject/${queueId}`, { method: 'POST', body: JSON.stringify({ reason: 'Ditolak oleh admin' }) }); 
-            showToast('❌ File ditolak'); 
-            showPendingQueue(); 
-        } catch (err) { showToast(err.message, true); }
-    }
+async function approveFile(queueId) { try { await apiCall(`/api/admin/approve/${queueId}`, { method: 'POST' }); showToast('✅ File disetujui!'); showPendingQueue(); loadFiles(); loadStats(); } catch (err) { showToast(err.message, true); } }
+async function rejectFile(queueId) { if (!confirm('Tolak file ini?')) return; try { await apiCall(`/api/admin/reject/${queueId}`, { method: 'POST', body: JSON.stringify({ reason: 'Ditolak oleh admin' }) }); showToast('❌ File ditolak'); showPendingQueue(); } catch (err) { showToast(err.message, true); } }
+
+async function showPendingEdits() {
+        try { const data = await apiCall('/api/admin/pending-edits'); const container = document.getElementById('adminContent');
+        if (data.edits.length === 0) { container.innerHTML = '<div class="empty-state">✏️ Tidak ada request edit</div>'; return; }
+        container.innerHTML = `<div>${data.edits.map(edit => `<div class="queue-card queue-card-edit"><div><strong>📝 ${edit.file_title || edit.file_name}</strong></div><div><small>👤 Request oleh: ${edit.requested_by_name}</small></div>
+        <div style="margin-top:0.5rem;"><strong>Perubahan:</strong><div style="background:#f7fafc; padding:0.5rem; margin-top:0.3rem;">
+        <div>Judul: <span class="diff-old">${escapeHtml(edit.current_data.title)}</span> → <span class="diff-new">${escapeHtml(edit.requested_data.title)}</span></div>
+        <div>Deskripsi: <span class="diff-old">${escapeHtml(edit.current_data.description.substring(0, 50))}</span> → <span class="diff-new">${escapeHtml(edit.requested_data.description.substring(0, 50))}</span></div>
+        <div>Kategori: <span class="diff-old">${edit.current_data.category}</span> → <span class="diff-new">${edit.requested_data.category}</span></div></div></div>
+        <div class="file-actions" style="margin-top:1rem;"><button class="download-btn" onclick="approveEdit('${edit.id}')">✅ Setujui</button><button class="delete-btn" onclick="rejectEdit('${edit.id}')">❌ Tolak</button></div></div>`).join('')}</div>`;
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active')); event.target.classList.add('active'); updateAdminBadges();
+        } catch (err) { showToast(err.message, true); } }
+
+    async function approveEdit(editId) { try { await apiCall(`/api/admin/approve-edit/${editId}`, { method: 'POST' }); showToast('✅ Edit disetujui!'); showPendingEdits(); loadFiles(); } catch (err) { showToast(err.message, true); } }
+    async function rejectEdit(editId) { const reason = prompt('Alasan penolakan:'); try { await apiCall(`/api/admin/reject-edit/${editId}`, { method: 'POST', body: JSON.stringify({ reason: reason || 'Tidak ada alasan' }) }); showToast('❌ Edit ditolak'); showPendingEdits(); } catch (err) { showToast(err.message, true); } }
+
+    async function showPendingDeletes() {
+        try { const data = await apiCall('/api/admin/pending-deletes'); const container = document.getElementById('adminContent');
+        if (data.deletes.length === 0) { container.innerHTML = '<div class="empty-state">🗑️ Tidak ada request hapus</div>'; return; }
+        container.innerHTML = `<div>${data.deletes.map(del => `<div class="queue-card queue-card-delete"><div><strong>📄 ${del.file_title}</strong></div><div><small>👤 Request oleh: ${del.requested_by_name}</small></div>
+        <div class="file-actions" style="margin-top:1rem;"><button class="download-btn" onclick="downloadPendingFile('${del.id}')">📥 Download File (Cek)</button></div>
+        <div class="file-actions" style="margin-top:1rem;"><button class="download-btn" onclick="approveDelete('${del.id}')">✅ Setujui Hapus</button><button class="delete-btn" onclick="rejectDelete('${del.id}')">❌ Tolak</button></div></div>`).join('')}</div>`;
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active')); event.target.classList.add('active'); updateAdminBadges();
+        } catch (err) { showToast(err.message, true); } }
+
+async function downloadPendingFile(deleteId) {
+    const url = API_BASE + `/api/admin/delete-download/${deleteId}`;
+    console.log('Downloading from:', url);
+    window.open(url, '_blank');
+}
+    async function approveDelete(deleteId) { if (!confirm('Setujui penghapusan file ini?')) return; try { await apiCall(`/api/admin/approve-delete/${deleteId}`, { method: 'POST' }); showToast('✅ File dihapus!'); showPendingDeletes(); loadFiles(); loadStats(); } catch (err) { showToast(err.message, true); } }
+    async function rejectDelete(deleteId) { const reason = prompt('Alasan penolakan:'); try { await apiCall(`/api/admin/reject-delete/${deleteId}`, { method: 'POST', body: JSON.stringify({ reason: reason || 'Tidak ada alasan' }) }); showToast('❌ Request hapus ditolak'); showPendingDeletes(); } catch (err) { showToast(err.message, true); } }
 
     async function showReportsList() {
-        try {
-            const data = await apiCall('/api/admin/reports');
-            const container = document.getElementById('adminContent');
-            
-            if (data.reports.length === 0) { 
-                container.innerHTML = '<div class="empty-state">🚩 Tidak ada laporan dari user</div>'; 
-                return; 
-            }
-            
-            container.innerHTML = `<div>${data.reports.map(r => `
-                <div class="report-card">
-                    <div><strong>📄 ${escapeHtml(r.file_name || 'File sudah dihapus')}</strong><br><small>👤 Dilaporkan oleh: ${escapeHtml(r.reporter_name)}</small><br><strong>🚩 Alasan:</strong> ${escapeHtml(r.reason)}</div>
-                    <div class="file-actions" style="margin-top:1rem;">
-                        <button class="download-btn" onclick="deleteFileFromReport('${r.file_id}', '${r.id}')">🗑️ Hapus File</button>
-                        <button class="delete-btn" onclick="ignoreReport('${r.id}')">👁️ Abaikan</button>
-                    </div>
-                </div>
-            `).join('')}</div>`;
-            
-            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-        } catch (err) { showToast(err.message, true); }
-    }
+        try { const data = await apiCall('/api/admin/reports'); const container = document.getElementById('adminContent');
+        if (data.reports.length === 0) { container.innerHTML = '<div class="empty-state">🚩 Tidak ada laporan dari user</div>'; return; }
+        container.innerHTML = `<div>${data.reports.map(r => `<div class="queue-card"><div><strong>📄 ${escapeHtml(r.file_name || 'File sudah dihapus')}</strong><br><small>👤 Dilaporkan oleh: ${escapeHtml(r.reporter_name)}</small><br><strong>🚩 Alasan:</strong> ${escapeHtml(r.reason)}</div>
+        <div class="file-actions" style="margin-top:1rem;"><button class="download-btn" onclick="deleteFileFromReport('${r.file_id}', '${r.id}')">🗑️ Hapus File</button><button class="delete-btn" onclick="ignoreReport('${r.id}')">👁️ Abaikan</button></div></div>`).join('')}</div>`;
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active')); event.target.classList.add('active'); updateAdminBadges();
+        } catch (err) { showToast(err.message, true); } }
 
-    async function deleteFileFromReport(fileId, reportId) {
-        if (!confirm('Hapus file ini?')) return;
-        try { 
-            await apiCall(`/api/admin/delete-file/${fileId}`, { method: 'POST' }); 
-            await apiCall(`/api/admin/ignore-report/${reportId}`, { method: 'POST' }); 
-            showToast('✅ File dihapus!'); 
-            showReportsList(); 
-            loadFiles(); 
-        } catch (err) { showToast(err.message, true); }
-    }
-
-    async function ignoreReport(reportId) {
-        try { 
-            await apiCall(`/api/admin/ignore-report/${reportId}`, { method: 'POST' }); 
-            showToast('Laporan diabaikan'); 
-            showReportsList(); 
-        } catch (err) { showToast(err.message, true); }
-    }
+    async function deleteFileFromReport(fileId, reportId) { if (!confirm('Hapus file ini?')) return; try { await apiCall(`/api/admin/delete-file/${fileId}`, { method: 'POST' }); await apiCall(`/api/admin/ignore-report/${reportId}`, { method: 'POST' }); showToast('✅ File dihapus!'); showReportsList(); loadFiles(); } catch (err) { showToast(err.message, true); } }
+    async function ignoreReport(reportId) { try { await apiCall(`/api/admin/ignore-report/${reportId}`, { method: 'POST' }); showToast('Laporan diabaikan'); showReportsList(); } catch (err) { showToast(err.message, true); } }
 
     // ============ MODAL FUNCTIONS ============
     function showLoginModal() { document.getElementById('loginModal').style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    function showLoginForm() { 
-        document.getElementById('loginFormDiv').style.display = 'block'; 
-        document.getElementById('registerFormDiv').style.display = 'none'; 
-    }
-    function showRegisterForm() { 
-        document.getElementById('loginFormDiv').style.display = 'none'; 
-        document.getElementById('registerFormDiv').style.display = 'block'; 
-    }
-    
-    window.onclick = (e) => { 
-        if (e.target.classList.contains('modal')) e.target.style.display = 'none'; 
-    }
+    function showLoginForm() { document.getElementById('loginFormDiv').style.display = 'block'; document.getElementById('registerFormDiv').style.display = 'none'; }
+    function showRegisterForm() { document.getElementById('loginFormDiv').style.display = 'none'; document.getElementById('registerFormDiv').style.display = 'block'; }
+    window.onclick = (e) => { if (e.target.classList.contains('modal')) e.target.style.display = 'none'; }
 
     // ============ INITIALIZE ============
     updateUI();
     loadFiles();
     loadStats();
     initSocket();
+    setInterval(() => { if (currentUser && currentUser.role === 'admin') updateAdminBadges(); }, 10000);
 </script>
 </body>
 </html>

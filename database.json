@@ -4,132 +4,143 @@
       "id": 1,
       "username": "admin",
       "email": "admin@fileshare.com",
-      "password": "$2b$10$FwlesiOKkY.4qrYkVS4IM.J3whb9vxaKDXB1lmNcV90hGc53Gqnza",
+      "password": "$2b$10$MQzPziFvc0HRzHKkVUBGCesuLQMYhRNY6zuabPxO46LM5nomGc4x2",
       "role": "admin",
-      "created_at": "2026-04-27T01:29:05.917Z"
+      "created_at": "2026-05-06T03:07:31.017Z"
     },
     {
       "id": 2,
-      "username": "reihan",
-      "email": "reihan@id",
-      "password": "$2b$10$f460kUPtdeD3A/RSMWbPe.v8TKnEFxIkANslkWgoWuPJu34WfKKPy",
+      "username": "rino",
+      "email": "ridho@imut",
+      "password": "$2b$10$P4JcxOsdXmsbVUJCYOBM3.jB04T2RT7gRcJtEhXSS0YEfx5.QA.Ce",
       "role": "user",
-      "created_at": "2026-04-27T01:52:47.363Z"
+      "created_at": "2026-05-06T03:08:17.714Z"
     }
   ],
   "files": [],
   "upload_queue": [
     {
       "id": 1,
-      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1777254331159-26324885.png",
-      "original_name": "Screenshot (22).png",
-      "file_size": 1725079,
-      "mime_type": "image/png",
-      "uploaded_by": 1,
-      "description": "arthurbrut",
+      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1778036938796-922948565.png",
+      "original_name": "bahan.png",
+      "title": "rere",
+      "description": "rere",
       "category": "Image",
-      "status": "approved",
-      "submitted_at": "2026-04-27T01:45:31.294Z"
+      "file_size": 460381,
+      "uploaded_by": 2,
+      "status": "rejected",
+      "submitted_at": "2026-05-06T03:08:58.815Z"
     },
     {
       "id": 2,
-      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1777255731807-803808472.png",
-      "original_name": "Screenshot (18).png",
-      "file_size": 141517,
-      "mime_type": "image/png",
-      "uploaded_by": 2,
-      "description": "",
-      "category": "Document",
+      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1778038067370-334002753.png",
+      "original_name": "bahan.png",
+      "title": "fsff",
+      "description": "sfcASF",
+      "category": "Image",
+      "file_size": 460381,
+      "uploaded_by": 1,
       "status": "approved",
-      "submitted_at": "2026-04-27T02:08:51.815Z"
+      "submitted_at": "2026-05-06T03:27:47.390Z"
     },
     {
       "id": 3,
-      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1777258663584-978641109.png",
-      "original_name": "Screenshot (18).png",
-      "file_size": 141517,
-      "mime_type": "image/png",
+      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1778046213790-572542317.png",
+      "original_name": "bahan2.png",
+      "title": "fefsfdsfg",
+      "description": "bcxcxcvx",
+      "category": "Image",
+      "file_size": 193795,
       "uploaded_by": 2,
-      "description": "",
-      "category": "Document",
       "status": "approved",
-      "submitted_at": "2026-04-27T02:57:43.593Z"
+      "submitted_at": "2026-05-06T05:43:33.804Z"
     },
     {
       "id": 4,
-      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1777259765482-804876956.png",
-      "original_name": "slavedns.png",
-      "file_size": 99249,
-      "mime_type": "image/png",
+      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1778046305125-556420231.png",
+      "original_name": "Screenshot 2025-12-18 113350.png",
+      "title": "",
+      "description": "",
+      "category": "Image",
+      "file_size": 1634,
       "uploaded_by": 2,
-      "description": "",
-      "category": "Document",
       "status": "approved",
-      "submitted_at": "2026-04-27T03:16:05.507Z"
-    },
+      "submitted_at": "2026-05-06T05:45:05.130Z"
+    }
+  ],
+  "pending_edits": [
     {
-      "id": 5,
-      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1777259812547-988735532.png",
-      "original_name": "Screenshot (18).png",
-      "file_size": 141517,
-      "mime_type": "image/png",
-      "uploaded_by": 2,
-      "description": "",
-      "category": "Document",
-      "status": "rejected",
-      "submitted_at": "2026-04-27T03:16:52.567Z"
-    },
-    {
-      "id": 6,
-      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1777266893651-427278120.png",
-      "original_name": "Screenshot (19).png",
-      "file_size": 101069,
-      "mime_type": "image/png",
-      "uploaded_by": 2,
-      "description": "",
-      "category": "Document",
+      "id": "edit_1778046243868_pi50q8",
+      "file_id": "file_1778046228150_fc63yrje",
+      "file_name": "bahan2.png",
+      "file_title": "fefsfdsfg",
+      "requested_by": 2,
+      "requested_by_name": "rino",
+      "current_data": {
+        "title": "fefsfdsfg",
+        "description": "bcxcxcvx",
+        "category": "Image"
+      },
+      "requested_data": {
+        "title": "pepek",
+        "description": "bcxcxcvx",
+        "category": "Image"
+      },
       "status": "approved",
-      "submitted_at": "2026-04-27T05:14:53.660Z"
-    },
+      "created_at": "2026-05-06T05:44:03.870Z",
+      "reviewed_at": "2026-05-06T05:44:14.436Z",
+      "reviewed_by": 1
+    }
+  ],
+  "pending_deletes": [
     {
-      "id": 7,
-      "temp_path": "C:\\xampp\\htdocs\\PJBL BARU\\uploads\\temp\\1777268059197-237152361.png",
-      "original_name": "Screenshot (17).png",
-      "file_size": 71098,
-      "mime_type": "image/png",
-      "uploaded_by": 1,
-      "description": "",
-      "category": "Document",
+      "id": "del_1778046262387_ygwn3q",
+      "file_id": "file_1778046228150_fc63yrje",
+      "file_name": "bahan2.png",
+      "file_title": "pepek",
+      "stored_name": "uploads/files/file_1778046228150_fc63yrje.png",
+      "requested_by": 2,
+      "requested_by_name": "rino",
       "status": "approved",
-      "submitted_at": "2026-04-27T05:34:19.206Z"
+      "created_at": "2026-05-06T05:44:22.387Z",
+      "reviewed_at": "2026-05-06T05:44:40.919Z"
     }
   ],
   "reports": [
     {
-      "id": "report_1777258220685_1hzcdp",
-      "file_id": "file_1777256189905_45d8uz5o",
+      "id": "report_1778046285763_ad051d",
+      "file_id": "file_1778038565201_s5ko9c2l",
+      "reported_by": 2,
+      "reason": "Konten tidak pantas",
+      "description": "",
+      "status": "ignored",
+      "created_at": "2026-05-06T05:44:45.763Z"
+    },
+    {
+      "id": "report_1778112646019_cquzcv",
+      "file_id": "file_1778046308065_wvdeekn6",
       "reported_by": 1,
       "reason": "Konten tidak pantas",
-      "description": "manuk",
+      "description": "",
       "status": "ignored",
-      "created_at": "2026-04-27T02:50:20.685Z",
-      "resolved_at": "2026-04-27T02:50:35.664Z"
+      "created_at": "2026-05-07T00:10:46.019Z"
     }
   ],
   "rejected_files": [
     {
-      "original_name": "Screenshot (18).png",
-      "file_size": 141517,
+      "id": 1,
+      "original_name": "bahan.png",
+      "file_size": 460381,
       "uploaded_by": 2,
-      "description": "",
-      "category": "Document",
+      "description": "rere",
+      "category": "Image",
       "reject_reason": "Ditolak oleh admin",
-      "rejected_at": "2026-04-27T03:17:01.151Z"
+      "rejected_at": "2026-05-06T03:27:52.016Z"
     }
   ],
   "next_id": {
     "user": 3,
-    "queue": 8,
+    "queue": 5,
     "report": 1
   }
 }
