@@ -15,18 +15,26 @@ const io = socketIo(server, { cors: { origin: "*" } });
 const PORT = 3000;
 const JWT_SECRET = 'your_super_secret_key';
 
-
 // ============ MIDDLEWARE ============
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-// ============ DATABASE (JSON) ============
+// ============ DATABASE SETUP ============
 const DB_PATH = path.join(__dirname, 'database.json');
 
 function readDB() {
     if (!fs.existsSync(DB_PATH)) {
-        return { users: [], files: [], upload_queue: [], reports: [], rejected_files: [], next_id: { user: 2, queue: 1, report: 1 } };
+        return { 
+            users: [], 
+            files: [], 
+            upload_queue: [], 
+            pending_edits: [], 
+            pending_deletes: [], 
+            reports: [], 
+            rejected_files: [], 
+            next_id: { user: 2, queue: 1, report: 1 } 
+        };
     }
     const data = fs.readFileSync(DB_PATH, 'utf8');
     return JSON.parse(data);
@@ -50,56 +58,21 @@ function initDatabase() {
             }],
             files: [],
             upload_queue: [],
+            pending_edits: [],
+            pending_deletes: [],
             reports: [],
             rejected_files: [],
             next_id: { user: 2, queue: 1, report: 1 }
         };
         writeDB(initialData);
         console.log('✅ Database created with admin: admin / admin123');
+    } else {
+        const db = readDB();
+        let changed = false;
+        if (!db.pending_edits) { db.pending_edits = []; changed = true; }
+        if (!db.pending_deletes) { db.pending_deletes = []; changed = true; }
+        if (changed) writeDB(db);
     }
-}
-
-// ============ SOCKET.IO REAL-TIME ============
-// Menyimpan koneksi user yang sedang online
-const onlineUsers = new Map();
-
-io.on('connection', (socket) => {
-    console.log('🔌 Client connected:', socket.id);
-    
-    socket.on('register-user', (userId) => {
-        onlineUsers.set(userId, socket.id);
-        console.log(`✅ User ${userId} registered, online: ${onlineUsers.size}`);
-    });
-    
-    socket.on('disconnect', () => {
-        for (let [userId, socketId] of onlineUsers.entries()) {
-            if (socketId === socket.id) {
-                onlineUsers.delete(userId);
-                console.log(`❌ User ${userId} disconnected`);
-                break;
-            }
-        }
-    });
-});
-
-// Fungsi untuk broadcast ke semua client
-function broadcastNewFile(file) {
-    console.log('📢 Broadcasting new file:', file.original_name);
-    io.emit('new-file', file);
-}
-
-function broadcastFileDeleted(fileId) {
-    console.log('📢 Broadcasting file deletion:', fileId);
-    io.emit('file-deleted', fileId);
-}
-
-function broadcastFileUpdated(fileId, newData) {
-    console.log('📢 Broadcasting file update:', fileId);
-    io.emit('file-updated', { id: fileId, ...newData });
-}
-function broadcastFileUpdated(fileId, newData) {
-    console.log('📢 Broadcasting file update:', fileId);
-    io.emit('file-updated', { id: fileId, ...newData });
 }
 
 // ============ AUTH MIDDLEWARE ============
@@ -119,6 +92,23 @@ const requireAdmin = (req, res, next) => {
     if (req.user && req.user.role === 'admin') next();
     else res.status(403).json({ error: 'Admin access required' });
 };
+
+// ============ SOCKET.IO ============
+io.on('connection', (socket) => {
+    console.log('🔌 Client connected:', socket.id);
+});
+
+function broadcastNewFile(file) {
+    io.emit('new-file', file);
+}
+
+function broadcastFileDeleted(fileId) {
+    io.emit('file-deleted', fileId);
+}
+
+function broadcastFileUpdated(fileId, newData) {
+    io.emit('file-updated', { id: fileId, ...newData });
+}
 
 // ============ MULTER CONFIG ============
 const tempDir = path.join(__dirname, 'uploads', 'temp');
@@ -165,10 +155,8 @@ app.post('/api/login', async (req, res) => {
     const db = readDB();
     const user = db.users.find(u => u.username === username);
     if (!user) return res.status(401).json({ error: 'Username atau password salah' });
-    
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) return res.status(401).json({ error: 'Username atau password salah' });
-    
     const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ success: true, token, user: { id: user.id, username: user.username, email: user.email, role: user.role } });
 });
@@ -179,45 +167,22 @@ app.get('/api/files', async (req, res) => {
     let files = [...db.files];
     const { search, category, sort, page = 1, limit = 20 } = req.query;
     
-    // FILTER BERDASARKAN SEARCH (NAMA FILE, JUDUL, ATAU DESKRIPSI)
     if (search) {
-        const searchLower = search.toLowerCase();
+        const s = search.toLowerCase();
         files = files.filter(f => 
-            f.original_name.toLowerCase().includes(searchLower) ||
-            (f.title && f.title.toLowerCase().includes(searchLower)) ||
-            (f.description && f.description.toLowerCase().includes(searchLower))
+            f.original_name.toLowerCase().includes(s) ||
+            (f.title && f.title.toLowerCase().includes(s)) ||
+            (f.description && f.description.toLowerCase().includes(s))
         );
     }
+    if (category && category !== 'all') files = files.filter(f => f.category === category);
+    if (sort === 'downloads') files.sort((a, b) => b.download_count - a.download_count);
+    else files.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at));
     
-    // FILTER BERDASARKAN KATEGORI
-    if (category && category !== 'all') {
-        files = files.filter(f => f.category === category);
-    }
-    
-    // SORTING
-    if (sort === 'downloads') {
-        files.sort((a, b) => b.download_count - a.download_count);
-    } else {
-        files.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at));
-    }
-    
-    // AMBIL NAMA UPLOADER
     const users = db.users;
-    const filesWithUploader = files.map(f => ({
-        ...f,
-        uploader_name: users.find(u => u.id === f.uploaded_by)?.username || 'Unknown'
-    }));
-    
-    // PAGINATION
+    const filesWithUploader = files.map(f => ({ ...f, uploader_name: users.find(u => u.id === f.uploaded_by)?.username || 'Unknown' }));
     const start = (parseInt(page) - 1) * parseInt(limit);
-    const paginatedFiles = filesWithUploader.slice(start, start + parseInt(limit));
-    
-    res.json({
-        files: paginatedFiles,
-        total_files: files.length,
-        current_page: parseInt(page),
-        total_pages: Math.ceil(files.length / limit)
-    });
+    res.json({ files: filesWithUploader.slice(start, start + parseInt(limit)), total_files: files.length });
 });
 
 app.post('/api/download/:id', async (req, res) => {
@@ -231,43 +196,12 @@ app.post('/api/download/:id', async (req, res) => {
 });
 
 app.get('/api/download/:id', async (req, res) => {
-    try {
-        const db = readDB();
-        const file = db.files.find(f => f.id === req.params.id);
-        
-        if (!file) {
-            console.log('File not found in database:', req.params.id);
-            return res.status(404).send('File tidak ditemukan di database');
-        }
-        
-        // Cek beberapa kemungkinan lokasi file
-        let filePath = file.stored_name;
-        
-        // Jika stored_name sudah path absolut
-        if (path.isAbsolute(filePath)) {
-            // Gunakan langsung
-        } 
-        // Jika stored_name dimulai dengan 'uploads/'
-        else if (filePath.startsWith('uploads')) {
-            filePath = path.join(__dirname, filePath);
-        }
-        // Jika hanya nama file
-        else {
-            filePath = path.join(__dirname, 'uploads', 'files', filePath);
-        }
-        
-        console.log('Looking for file at:', filePath);
-        
-        if (!fs.existsSync(filePath)) {
-            console.log('File not found on disk:', filePath);
-            return res.status(404).send('File tidak ditemukan di server');
-        }
-        
-        res.download(filePath, file.original_name);
-    } catch (error) {
-        console.error('Download error:', error);
-        res.status(500).send('Terjadi kesalahan saat download');
-    }
+    const db = readDB();
+    const file = db.files.find(f => f.id === req.params.id);
+    if (!file) return res.status(404).send('File not found');
+    const filePath = path.join(__dirname, file.stored_name);
+    if (!fs.existsSync(filePath)) return res.status(404).send('File not found');
+    res.download(filePath, file.original_name);
 });
 
 // ============ UPLOAD ROUTES ============
@@ -275,20 +209,18 @@ app.post('/api/upload/submit', authenticate, upload.single('file'), async (req, 
     try {
         if (!req.file) return res.status(400).json({ error: 'Tidak ada file' });
         const db = readDB();
-        const { description, category } = req.body;
+        const { title, description, category } = req.body;
         const newQueueItem = {
-    id: db.next_id.queue++,
-    temp_path: req.file.path,
-    original_name: req.file.originalname,
-    title: req.body.title || '',  // ← TAMBAHKAN INI
-    file_size: req.file.size,
-    mime_type: req.file.mimetype,
-    uploaded_by: req.user.id,
-    description: req.body.description || '',
-    category: req.body.category || 'Other',
-    status: 'pending',
-    submitted_at: new Date().toISOString()
-        
+            id: db.next_id.queue++,
+            temp_path: req.file.path,
+            original_name: req.file.originalname,
+            title: title || '',
+            description: description || '',
+            category: category || 'Other',
+            file_size: req.file.size,
+            uploaded_by: req.user.id,
+            status: 'pending',
+            submitted_at: new Date().toISOString()
         };
         db.upload_queue.push(newQueueItem);
         writeDB(db);
@@ -308,7 +240,41 @@ app.get('/api/upload/my-uploads', authenticate, async (req, res) => {
     });
 });
 
-// ============ ADMIN ROUTES ============
+// ============ ADMIN DOWNLOAD (Tanpa Auth, untuk pengecekan file) ============
+app.get('/api/admin/queue-download/:queueId', async (req, res) => {
+    const db = readDB();
+    const queueId = parseInt(req.params.queueId);
+    const queueItem = db.upload_queue.find(q => q.id === queueId && q.status === 'pending');
+    
+    if (!queueItem) {
+        return res.status(404).send('File tidak ditemukan');
+    }
+    
+    if (!queueItem.temp_path || !fs.existsSync(queueItem.temp_path)) {
+        return res.status(404).send('File sudah tidak ada di server');
+    }
+    
+    res.download(queueItem.temp_path, queueItem.original_name);
+});
+
+app.get('/api/admin/delete-download/:deleteId', async (req, res) => {
+    const db = readDB();
+    const deleteId = req.params.deleteId;
+    const deleteReq = (db.pending_deletes || []).find(d => d.id === deleteId && d.status === 'pending');
+    
+    if (!deleteReq) {
+        return res.status(404).send('Request tidak ditemukan');
+    }
+    
+    const filePath = path.join(__dirname, deleteReq.stored_name);
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).send('File sudah tidak ada di server');
+    }
+    
+    res.download(filePath, deleteReq.file_name);
+});
+
+// ============ ADMIN QUEUE (Upload Baru) ============
 app.get('/api/admin/queue', authenticate, requireAdmin, async (req, res) => {
     const db = readDB();
     const pending = db.upload_queue.filter(q => q.status === 'pending');
@@ -319,59 +285,47 @@ app.get('/api/admin/queue', authenticate, requireAdmin, async (req, res) => {
 app.post('/api/admin/approve/:queueId', authenticate, requireAdmin, async (req, res) => {
     const db = readDB();
     const queueIndex = db.upload_queue.findIndex(q => q.id === parseInt(req.params.queueId) && q.status === 'pending');
-    
-    if (queueIndex === -1) {
-        return res.status(404).json({ error: 'Queue item not found' });
-    }
+    if (queueIndex === -1) return res.status(404).json({ error: 'Queue item not found' });
     
     const queueItem = db.upload_queue[queueIndex];
     const fileId = 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8);
     const extension = path.extname(queueItem.original_name);
-    const storedFileName = fileId + extension;
-    const storedPath = path.join(filesDir, storedFileName);
-    const relativePath = 'uploads/files/' + storedFileName;
+    const storedPath = path.join(filesDir, fileId + extension);
+    const relativePath = 'uploads/files/' + fileId + extension;
     
-    // Pindahkan file
     fs.renameSync(queueItem.temp_path, storedPath);
     
     const newFile = {
-    id: fileId,
-    original_name: queueItem.original_name,
-    title: queueItem.title || '',  // ← TAMBAHKAN INI
-    stored_name: relativePath,
-    size: queueItem.file_size,
-    mime_type: queueItem.mime_type,
-    uploaded_by: queueItem.uploaded_by,
-    description: queueItem.description,
-    category: queueItem.category,
-    download_count: 0,
-    uploaded_at: new Date().toISOString()
+        id: fileId,
+        original_name: queueItem.original_name,
+        title: queueItem.title || '',
+        description: queueItem.description || '',
+        category: queueItem.category || 'Other',
+        stored_name: relativePath,
+        size: queueItem.file_size,
+        uploaded_by: queueItem.uploaded_by,
+        download_count: 0,
+        uploaded_at: new Date().toISOString()
     };
     
     db.files.push(newFile);
     db.upload_queue[queueIndex].status = 'approved';
     writeDB(db);
     
-    // 📢 BROADCAST KE SEMUA USER
     const users = db.users;
-    const fileWithUploader = {
-        ...newFile,
-        uploader_name: users.find(u => u.id === newFile.uploaded_by)?.username || 'Unknown'
-    };
-    broadcastNewFile(fileWithUploader);
-    
-    res.json({ success: true, message: 'File approved' });
+    broadcastNewFile({ ...newFile, uploader_name: users.find(u => u.id === newFile.uploaded_by)?.username || 'Unknown' });
+    res.json({ success: true });
 });
 
 app.post('/api/admin/reject/:queueId', authenticate, requireAdmin, async (req, res) => {
     const db = readDB();
     const queueIndex = db.upload_queue.findIndex(q => q.id === parseInt(req.params.queueId) && q.status === 'pending');
     if (queueIndex === -1) return res.status(404).json({ error: 'Queue item not found' });
-    
     const queueItem = db.upload_queue[queueIndex];
     if (fs.existsSync(queueItem.temp_path)) fs.unlinkSync(queueItem.temp_path);
     
     db.rejected_files.push({
+        id: db.rejected_files.length + 1,
         original_name: queueItem.original_name,
         file_size: queueItem.file_size,
         uploaded_by: queueItem.uploaded_by,
@@ -385,287 +339,230 @@ app.post('/api/admin/reject/:queueId', authenticate, requireAdmin, async (req, r
     res.json({ success: true });
 });
 
+// ============ REQUEST EDIT (Verifikasi Admin) ============
+app.post('/api/file/edit-request/:fileId', authenticate, async (req, res) => {
+    try {
+        const { title, description, category } = req.body;
+        const db = readDB();
+        const fileId = req.params.fileId;
+        const fileIndex = db.files.findIndex(f => f.id === fileId);
+        if (fileIndex === -1) return res.status(404).json({ error: 'File not found' });
+        const file = db.files[fileIndex];
+        if (file.uploaded_by !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'You can only edit your own files' });
+        }
+        if (!db.pending_edits) db.pending_edits = [];
+        db.pending_edits.push({
+            id: 'edit_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+            file_id: fileId,
+            file_name: file.original_name,
+            file_title: file.title || file.original_name,
+            requested_by: req.user.id,
+            requested_by_name: req.user.username,
+            current_data: {
+                title: file.title || '',
+                description: file.description || '',
+                category: file.category || 'Other'
+            },
+            requested_data: {
+                title: title || '',
+                description: description || '',
+                category: category || 'Other'
+            },
+            status: 'pending',
+            created_at: new Date().toISOString()
+        });
+        writeDB(db);
+        res.json({ success: true, message: 'Edit request sent to admin' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to submit edit request' });
+    }
+});
+
+// ============ REQUEST DELETE (Verifikasi Admin) ============
+app.post('/api/file/delete-request/:fileId', authenticate, async (req, res) => {
+    try {
+        const db = readDB();
+        const fileId = req.params.fileId;
+        const fileIndex = db.files.findIndex(f => f.id === fileId);
+        if (fileIndex === -1) return res.status(404).json({ error: 'File not found' });
+        const file = db.files[fileIndex];
+        if (file.uploaded_by !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'You can only delete your own files' });
+        }
+        if (!db.pending_deletes) db.pending_deletes = [];
+        db.pending_deletes.push({
+            id: 'del_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+            file_id: fileId,
+            file_name: file.original_name,
+            file_title: file.title || file.original_name,
+            stored_name: file.stored_name,
+            requested_by: req.user.id,
+            requested_by_name: req.user.username,
+            status: 'pending',
+            created_at: new Date().toISOString()
+        });
+        writeDB(db);
+        res.json({ success: true, message: 'Delete request sent to admin' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to submit delete request' });
+    }
+});
+
+// ============ ADMIN PENDING EDITS ============
+app.get('/api/admin/pending-edits', authenticate, requireAdmin, async (req, res) => {
+    const db = readDB();
+    const edits = (db.pending_edits || []).filter(e => e.status === 'pending');
+    res.json({ edits });
+});
+
+app.post('/api/admin/approve-edit/:editId', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const db = readDB();
+        const editId = req.params.editId;
+        const editIndex = (db.pending_edits || []).findIndex(e => e.id === editId && e.status === 'pending');
+        if (editIndex === -1) return res.status(404).json({ error: 'Edit request not found' });
+        const edit = db.pending_edits[editIndex];
+        const fileIndex = db.files.findIndex(f => f.id === edit.file_id);
+        if (fileIndex !== -1) {
+            db.files[fileIndex].title = edit.requested_data.title;
+            db.files[fileIndex].description = edit.requested_data.description;
+            db.files[fileIndex].category = edit.requested_data.category;
+        }
+        db.pending_edits[editIndex].status = 'approved';
+        db.pending_edits[editIndex].reviewed_at = new Date().toISOString();
+        db.pending_edits[editIndex].reviewed_by = req.user.id;
+        writeDB(db);
+        broadcastFileUpdated(edit.file_id, edit.requested_data);
+        res.json({ success: true, message: 'Edit approved' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/admin/reject-edit/:editId', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const db = readDB();
+        const editId = req.params.editId;
+        const editIndex = (db.pending_edits || []).findIndex(e => e.id === editId && e.status === 'pending');
+        if (editIndex === -1) return res.status(404).json({ error: 'Edit request not found' });
+        db.pending_edits[editIndex].status = 'rejected';
+        db.pending_edits[editIndex].reject_reason = req.body.reason || 'Ditolak admin';
+        db.pending_edits[editIndex].reviewed_at = new Date().toISOString();
+        db.pending_edits[editIndex].reviewed_by = req.user.id;
+        writeDB(db);
+        res.json({ success: true, message: 'Edit rejected' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ============ ADMIN PENDING DELETES ============
+app.get('/api/admin/pending-deletes', authenticate, requireAdmin, async (req, res) => {
+    const db = readDB();
+    const deletes = (db.pending_deletes || []).filter(d => d.status === 'pending');
+    res.json({ deletes });
+});
+
+app.post('/api/admin/approve-delete/:deleteId', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const db = readDB();
+        const deleteId = req.params.deleteId;
+        const delIndex = (db.pending_deletes || []).findIndex(d => d.id === deleteId && d.status === 'pending');
+        if (delIndex === -1) return res.status(404).json({ error: 'Delete request not found' });
+        const del = db.pending_deletes[delIndex];
+        const filePath = path.join(__dirname, del.stored_name);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        const fileIndex = db.files.findIndex(f => f.id === del.file_id);
+        if (fileIndex !== -1) db.files.splice(fileIndex, 1);
+        db.pending_deletes[delIndex].status = 'approved';
+        db.pending_deletes[delIndex].reviewed_at = new Date().toISOString();
+        writeDB(db);
+        broadcastFileDeleted(del.file_id);
+        res.json({ success: true, message: 'File deleted' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/admin/reject-delete/:deleteId', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const db = readDB();
+        const deleteId = req.params.deleteId;
+        const delIndex = (db.pending_deletes || []).findIndex(d => d.id === deleteId && d.status === 'pending');
+        if (delIndex === -1) return res.status(404).json({ error: 'Delete request not found' });
+        db.pending_deletes[delIndex].status = 'rejected';
+        db.pending_deletes[delIndex].reject_reason = req.body.reason || 'Ditolak admin';
+        db.pending_deletes[delIndex].reviewed_at = new Date().toISOString();
+        writeDB(db);
+        res.json({ success: true, message: 'Delete rejected' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ============ REPORT ROUTES ============
+app.post('/api/report', authenticate, async (req, res) => {
+    const { file_id, reason, description } = req.body;
+    const db = readDB();
+    db.reports.push({
+        id: 'report_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+        file_id,
+        reported_by: req.user.id,
+        reason,
+        description: description || '',
+        status: 'pending',
+        created_at: new Date().toISOString()
+    });
+    writeDB(db);
+    res.json({ success: true });
+});
+
+app.get('/api/admin/reports', authenticate, requireAdmin, async (req, res) => {
+    const db = readDB();
+    const pending = db.reports.filter(r => r.status === 'pending');
+    const users = db.users;
+    const files = db.files;
+    res.json({ reports: pending.map(r => ({ ...r, reporter_name: users.find(u => u.id === r.reported_by)?.username || 'Unknown', file_name: files.find(f => f.id === r.file_id)?.original_name || 'File dihapus' })) });
+});
+
+app.post('/api/admin/delete-file/:fileId', authenticate, requireAdmin, async (req, res) => {
+    const db = readDB();
+    const fileIndex = db.files.findIndex(f => f.id === req.params.fileId);
+    if (fileIndex !== -1) {
+        const file = db.files[fileIndex];
+        const filePath = path.join(__dirname, file.stored_name);
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        db.files.splice(fileIndex, 1);
+        writeDB(db);
+        broadcastFileDeleted(req.params.fileId);
+    }
+    res.json({ success: true });
+});
+
+app.post('/api/admin/ignore-report/:reportId', authenticate, requireAdmin, async (req, res) => {
+    const db = readDB();
+    const repIndex = db.reports.findIndex(r => r.id === req.params.reportId);
+    if (repIndex !== -1) {
+        db.reports[repIndex].status = 'ignored';
+        writeDB(db);
+    }
+    res.json({ success: true });
+});
+
 // ============ STATS ============
 app.get('/api/stats', async (req, res) => {
     const db = readDB();
     res.json({
         total_files: db.files.length,
         total_downloads: db.files.reduce((sum, f) => sum + (f.download_count || 0), 0),
-        total_users: db.users.length
-    });
-});
-// ============ REPORT ROUTES ============
-app.post('/api/report', authenticate, async (req, res) => {
-    const { file_id, reason, description } = req.body;
-    const db = readDB();
-    
-    db.reports.push({
-        id: 'report_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-        file_id: file_id,
-        reported_by: req.user.id,
-        reason: reason,
-        description: description || '',
-        status: 'pending',
-        created_at: new Date().toISOString()
-    });
-    writeDB(db);
-    
-    res.json({ success: true, message: 'Laporan terkirim' });
-});
-
-app.get('/api/admin/reports', authenticate, requireAdmin, async (req, res) => {
-    const db = readDB();
-    const pendingReports = db.reports.filter(r => r.status === 'pending');
-    const users = db.users;
-    const files = db.files;
-    
-    res.json({ 
-        reports: pendingReports.map(r => ({
-            ...r,
-            reporter_name: users.find(u => u.id === r.reported_by)?.username || 'Unknown',
-            file_name: files.find(f => f.id === r.file_id)?.original_name || 'File sudah dihapus'
-        }))
+        total_users: db.users.filter(u => u.username !== 'admin').length
     });
 });
 
-app.post('/api/admin/delete-file/:fileId', authenticate, requireAdmin, async (req, res) => {
-    const db = readDB();
-    const fileIndex = db.files.findIndex(f => f.id === req.params.fileId);
-    
-    if (fileIndex !== -1) {
-        const file = db.files[fileIndex];
-        const filePath = path.join(__dirname, file.stored_name);
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-        }
-        db.files.splice(fileIndex, 1);
-        writeDB(db);
-    }
-    
-    res.json({ success: true });
-});
-
-app.post('/api/admin/ignore-report/:reportId', authenticate, requireAdmin, async (req, res) => {
-    const db = readDB();
-    const reportIndex = db.reports.findIndex(r => r.id === req.params.reportId);
-    
-    if (reportIndex !== -1) {
-        db.reports[reportIndex].status = 'ignored';
-        db.reports[reportIndex].resolved_at = new Date().toISOString();
-        writeDB(db);
-    }
-    
-    res.json({ success: true });
-});
 // ============ SERVE FRONTEND ============
-// ============ EDIT & DELETE FILE (for owner) ============
-// ============ EDIT FILE ============
-app.put('/api/file/:fileId', authenticate, async (req, res) => {
-    try {
-        const { title, description, category } = req.body;
-        const db = readDB();
-        const fileId = req.params.fileId;
-        
-        console.log('✏️ Edit request for file:', fileId);
-        console.log('New title:', title);
-        
-        const fileIndex = db.files.findIndex(f => f.id === fileId);
-        
-        if (fileIndex === -1) {
-            return res.status(404).json({ error: 'File not found' });
-        }
-        
-        const file = db.files[fileIndex];
-        
-        // Cek kepemilikan
-        if (file.uploaded_by !== req.user.id && req.user.role !== 'admin') {
-            return res.status(403).json({ error: 'You can only edit your own files' });
-        }
-        
-        // Update field
-        if (title !== undefined) db.files[fileIndex].title = title;
-        if (description !== undefined) db.files[fileIndex].description = description;
-        if (category !== undefined) db.files[fileIndex].category = category;
-        
-        writeDB(db);
-        
-        // Broadcast update
-        broadcastFileUpdated(fileId, { title, description, category });
-        
-        console.log('✅ File updated successfully');
-        res.json({ success: true, message: 'File updated' });
-        
-    } catch (error) {
-        console.error('❌ Edit error:', error);
-        res.status(500).json({ error: 'Gagal mengedit file: ' + error.message });
-    }
-});
-
-// ============ TAMBAHKAN ROUTE DELETE INI ============
-// ============ DELETE FILE ============
-app.delete('/api/file/:fileId', authenticate, async (req, res) => {
-    try {
-        const db = readDB();
-        const fileId = req.params.fileId;
-        
-        console.log('🗑️ Delete request for file:', fileId);
-        console.log('User:', req.user?.username, '(ID:', req.user?.id, ')');
-        
-        // Cari file
-        const fileIndex = db.files.findIndex(f => f.id === fileId);
-        
-        if (fileIndex === -1) {
-            console.log('❌ File not found in database');
-            return res.status(404).json({ error: 'File tidak ditemukan' });
-        }
-        
-        const file = db.files[fileIndex];
-        
-        // Cek apakah user adalah pemilik file atau admin
-        if (file.uploaded_by !== req.user.id && req.user.role !== 'admin') {
-            console.log('❌ Unauthorized: User is not owner');
-            return res.status(403).json({ error: 'Anda hanya bisa menghapus file sendiri' });
-        }
-        
-        // Hapus file fisik dari disk
-        let filePath = file.stored_name;
-        if (!path.isAbsolute(filePath)) {
-            filePath = path.join(__dirname, file.stored_name);
-        }
-        
-        console.log('📁 Looking for file at:', filePath);
-        
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-            console.log('✅ File deleted from disk');
-        } else {
-            console.log('⚠️ File not found on disk, but removing from database');
-        }
-        
-        // Hapus dari database
-        db.files.splice(fileIndex, 1);
-        writeDB(db);
-        
-        // Broadcast ke semua user
-        broadcastFileDeleted(fileId);
-        
-        console.log('✅ File removed from database');
-        res.json({ success: true, message: 'File berhasil dihapus' });
-        
-    } catch (error) {
-        console.error('❌ Delete error:', error);
-        res.status(500).json({ error: 'Gagal menghapus file: ' + error.message });
-    }
-});
 app.use(express.static('public'));
-
-// PERBAIKAN: Ganti app.get('*', ...) dengan app.use
-app.use((req, res) => {
+app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-// ============ REPORT ROUTES (LENGKAP) ============
-app.post('/api/report', authenticate, async (req, res) => {
-    const { file_id, reason, description } = req.body;
-    const db = readDB();
-    
-    // Cek apakah file masih ada
-    const fileExists = db.files.some(f => f.id === file_id);
-    if (!fileExists) {
-        return res.status(404).json({ error: 'File tidak ditemukan' });
-    }
-    
-    // Cek apakah sudah pernah report oleh user ini
-    const alreadyReported = db.reports.some(r => r.file_id === file_id && r.reported_by === req.user.id && r.status === 'pending');
-    if (alreadyReported) {
-        return res.status(400).json({ error: 'Anda sudah melaporkan file ini' });
-    }
-    
-    const newReport = {
-        id: 'report_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-        file_id: file_id,
-        reported_by: req.user.id,
-        reason: reason,
-        description: description || '',
-        status: 'pending',
-        created_at: new Date().toISOString()
-    };
-    
-    db.reports.push(newReport);
-    writeDB(db);
-    
-    res.json({ success: true, message: 'Laporan terkirim ke admin' });
-});
 
-app.get('/api/admin/reports', authenticate, requireAdmin, async (req, res) => {
-    const db = readDB();
-    const reports = db.reports.filter(r => r.status === 'pending');
-    const users = db.users;
-    const files = db.files;
-    
-    const reportsWithDetails = reports.map(r => {
-        const file = files.find(f => f.id === r.file_id);
-        return {
-            ...r,
-            reporter_name: users.find(u => u.id === r.reported_by)?.username || 'Unknown',
-            file_name: file?.original_name || 'File sudah dihapus',
-            file_exists: !!file
-        };
-    });
-    
-    res.json({ reports: reportsWithDetails });
-});
-
-app.post('/api/admin/delete-file/:fileId', authenticate, requireAdmin, async (req, res) => {
-    const db = readDB();
-    const fileIndex = db.files.findIndex(f => f.id === req.params.fileId);
-    
-    if (fileIndex === -1) {
-        return res.status(404).json({ error: 'File tidak ditemukan' });
-    }
-    
-    const file = db.files[fileIndex];
-    const filePath = path.join(__dirname, file.stored_name);
-    
-    // Hapus file fisik
-    if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-    }
-    
-    // Hapus dari database
-    db.files.splice(fileIndex, 1);
-    
-    // Update semua report terkait file ini
-    db.reports.forEach(r => {
-        if (r.file_id === req.params.fileId) {
-            r.status = 'resolved';
-            r.resolved_at = new Date().toISOString();
-            r.action = 'deleted';
-        }
-    });
-    
-    writeDB(db);
-    
-    res.json({ success: true, message: 'File berhasil dihapus' });
-});
-
-app.post('/api/admin/ignore-report/:reportId', authenticate, requireAdmin, async (req, res) => {
-    const db = readDB();
-    const reportIndex = db.reports.findIndex(r => r.id === req.params.reportId);
-    
-    if (reportIndex === -1) {
-        return res.status(404).json({ error: 'Laporan tidak ditemukan' });
-    }
-    
-    db.reports[reportIndex].status = 'ignored';
-    db.reports[reportIndex].resolved_at = new Date().toISOString();
-    db.reports[reportIndex].action = 'ignored';
-    writeDB(db);
-    
-    res.json({ success: true, message: 'Laporan diabaikan' });
-});
 // ============ START SERVER ============
 initDatabase();
 server.listen(PORT, () => {
     console.log(`\n🚀 Server running on http://localhost:${PORT}`);
-    console.log(`🔐 Admin login: admin / admin123\n`);
+    console.log(`🔐 Admin: admin / admin123\n`);
 });
