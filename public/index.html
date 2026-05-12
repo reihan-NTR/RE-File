@@ -2,109 +2,161 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <title>RE-File | Platform Berbagi File</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="/socket.io/socket.io.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .navbar { background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .logo { font-size: 1.5rem; font-weight: bold; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
-        .nav-links { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
-        .nav-links a { text-decoration: none; padding: 0.5rem 1rem; border-radius: 50px; cursor: pointer; color: #4a5568; transition: all 0.3s; font-weight: 500; }
+        
+        /* ============ NAVBAR RESPONSIVE ============ */
+        .navbar { background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); padding: 0.8rem 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .logo { font-size: 1.3rem; font-weight: bold; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+        .logo a { text-decoration: none; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-links { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+        .nav-links a { text-decoration: none; padding: 0.4rem 0.8rem; border-radius: 50px; cursor: pointer; color: #4a5568; transition: all 0.3s; font-weight: 500; font-size: 0.85rem; }
         .nav-links a:hover { background: #667eea; color: white; transform: translateY(-2px); }
         .btn-login { background: linear-gradient(135deg, #667eea, #764ba2); color: white !important; box-shadow: 0 2px 5px rgba(102,126,234,0.3); }
-        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
-        .hero { text-align: center; color: white; padding: 2rem 1rem; }
-        .hero h1 { font-size: 2.5rem; margin-bottom: 1rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
-        .hero p { font-size: 1.1rem; opacity: 0.95; }
-        .search-wrapper { background: white; border-radius: 60px; padding: 0.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.15); margin-bottom: 2rem; transition: all 0.3s; }
-        .search-wrapper:hover { box-shadow: 0 25px 50px rgba(0,0,0,0.2); transform: translateY(-2px); }
-        .search-container { display: flex; gap: 0.5rem; align-items: center; flex-wrap: nowrap; }
+        
+        /* ============ CONTAINER ============ */
+        .container { max-width: 1400px; margin: 0 auto; padding: 1rem; }
+        .hero { text-align: center; color: white; padding: 1.5rem 1rem; }
+        .hero h1 { font-size: 1.8rem; margin-bottom: 0.5rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .hero p { font-size: 0.9rem; opacity: 0.95; }
+        
+        /* ============ SEARCH BAR RESPONSIVE ============ */
+        .search-wrapper { background: white; border-radius: 60px; padding: 0.5rem; box-shadow: 0 20px 40px rgba(0,0,0,0.15); margin-bottom: 1.5rem; transition: all 0.3s; }
+        .search-container { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
         .search-input-group { flex: 3; display: flex; align-items: center; background: #f7fafc; border-radius: 50px; padding: 0 1rem; border: 2px solid #e2e8f0; transition: all 0.3s; }
         .search-input-group:focus-within { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); background: white; }
-        .search-input-group i { color: #a0aec0; font-size: 1.1rem; }
-        .search-input { flex: 1; padding: 1rem 0.8rem; border: none; outline: none; font-size: 1rem; background: transparent; font-weight: 500; }
+        .search-input-group i { color: #a0aec0; font-size: 1rem; }
+        .search-input { flex: 1; padding: 0.8rem 0.5rem; border: none; outline: none; font-size: 0.9rem; background: transparent; font-weight: 500; }
         .filter-group { flex: 1; display: flex; gap: 0.5rem; }
-        .filter-select { flex: 1; padding: 0 1.2rem; border: 2px solid #e2e8f0; outline: none; border-radius: 50px; background: #f7fafc; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: #4a5568; transition: all 0.3s; height: 54px; }
+        .filter-select { flex: 1; padding: 0 1rem; border: 2px solid #e2e8f0; outline: none; border-radius: 50px; background: #f7fafc; cursor: pointer; font-size: 0.8rem; font-weight: 500; color: #4a5568; transition: all 0.3s; height: 44px; }
         .filter-select:hover { border-color: #667eea; background: white; }
-        .search-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0 2rem; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: all 0.3s; display: flex; align-items: center; gap: 0.5rem; height: 54px; white-space: nowrap; }
+        .search-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0 1.2rem; border-radius: 50px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all 0.3s; display: flex; align-items: center; gap: 0.3rem; height: 44px; white-space: nowrap; }
         .search-btn:hover { transform: scale(1.02); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
-        @media (max-width: 900px) { .search-container { flex-wrap: wrap; } .search-input-group { flex: 100%; width: 100%; } .filter-group { flex: 1; min-width: 150px; } .search-btn { flex: 0.5; justify-content: center; } }
-        @media (max-width: 600px) { .filter-group { flex-wrap: wrap; width: 100%; } .filter-select { width: 100%; } .search-btn { width: 100%; justify-content: center; } }
-        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
-        .stat-card { background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 20px; padding: 1.2rem; text-align: center; color: white; transition: all 0.3s; border: 1px solid rgba(255,255,255,0.2); }
-        .stat-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.25); }
-        .stat-number { font-size: 2rem; font-weight: 800; }
-        .stat-label { font-size: 0.85rem; opacity: 0.9; margin-top: 0.3rem; }
-        .categories-wrapper { margin-bottom: 2rem; overflow-x: auto; white-space: nowrap; padding-bottom: 0.5rem; }
-        .categories { display: inline-flex; gap: 0.8rem; }
-        .category-pill { background: rgba(255,255,255,0.2); color: white; padding: 0.6rem 1.5rem; border-radius: 50px; cursor: pointer; transition: all 0.3s; font-size: 0.9rem; font-weight: 500; backdrop-filter: blur(5px); display: inline-flex; align-items: center; gap: 0.5rem; }
+        
+        /* ============ STATS RESPONSIVE ============ */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-card { background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 16px; padding: 1rem; text-align: center; color: white; transition: all 0.3s; border: 1px solid rgba(255,255,255,0.2); }
+        .stat-card:hover { transform: translateY(-3px); background: rgba(255,255,255,0.25); }
+        .stat-number { font-size: 1.6rem; font-weight: 800; }
+        .stat-label { font-size: 0.7rem; opacity: 0.9; margin-top: 0.2rem; }
+        
+        /* ============ CATEGORIES RESPONSIVE ============ */
+        .categories-wrapper { margin-bottom: 1.5rem; overflow-x: auto; white-space: nowrap; padding-bottom: 0.5rem; -webkit-overflow-scrolling: touch; }
+        .categories { display: inline-flex; gap: 0.6rem; }
+        .category-pill { background: rgba(255,255,255,0.2); color: white; padding: 0.5rem 1rem; border-radius: 50px; cursor: pointer; transition: all 0.3s; font-size: 0.8rem; font-weight: 500; backdrop-filter: blur(5px); display: inline-flex; align-items: center; gap: 0.3rem; }
         .category-pill:hover, .category-pill.active { background: white; color: #667eea; transform: translateY(-2px); }
-        .files-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1.5rem; }
-        .file-card { background: white; border-radius: 20px; padding: 1.5rem; transition: all 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .file-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
-        .file-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-        .file-icon { width: 55px; height: 55px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white; }
+        
+        /* ============ FILES GRID RESPONSIVE ============ */
+        .files-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+        .file-card { background: white; border-radius: 16px; padding: 1rem; transition: all 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .file-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .file-header { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem; }
+        .file-icon { width: 45px; height: 45px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; color: white; }
         .file-info { flex: 1; }
-        .file-title { font-weight: 700; font-size: 1rem; color: #2d3748; word-break: break-all; }
-        .file-name { font-size: 0.75rem; color: #718096; margin-top: 0.2rem; word-break: break-all; }
-        .file-description { font-size: 0.85rem; color: #718096; background: #f7fafc; padding: 0.6rem; border-radius: 12px; margin: 0.5rem 0; line-height: 1.4; }
-        .file-meta { display: flex; gap: 1rem; font-size: 0.75rem; color: #718096; margin: 0.8rem 0; padding: 0.5rem 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
-        .file-meta span { display: flex; align-items: center; gap: 0.3rem; }
-        .file-actions { display: flex; gap: 0.5rem; }
-        .download-btn { flex: 2; padding: 0.7rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+        .file-title { font-weight: 700; font-size: 0.9rem; color: #2d3748; word-break: break-all; }
+        .file-name { font-size: 0.65rem; color: #718096; margin-top: 0.2rem; word-break: break-all; }
+        .file-description { font-size: 0.75rem; color: #718096; background: #f7fafc; padding: 0.5rem; border-radius: 10px; margin: 0.5rem 0; line-height: 1.4; }
+        .file-meta { display: flex; gap: 0.8rem; font-size: 0.65rem; color: #718096; margin: 0.5rem 0; padding: 0.3rem 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
+        .file-meta span { display: flex; align-items: center; gap: 0.2rem; }
+        .file-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .download-btn { flex: 2; padding: 0.5rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.75rem; transition: all 0.3s; }
         .download-btn:hover { transform: scale(1.02); }
-        .edit-btn { flex: 1; padding: 0.7rem; background: #4299e1; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; }
-        .delete-btn { flex: 1; padding: 0.7rem; background: #f56565; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; }
-        .report-btn { flex: 1; padding: 0.7rem; background: #ed8936; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 600; }
-        .fab { position: fixed; bottom: 2rem; right: 2rem; width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 25px rgba(0,0,0,0.3); border: none; font-size: 1.5rem; z-index: 100; transition: all 0.3s; }
+        .edit-btn, .delete-btn, .report-btn { flex: 1; padding: 0.5rem; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.75rem; color: white; }
+        .edit-btn { background: #4299e1; }
+        .delete-btn { background: #f56565; }
+        .report-btn { background: #ed8936; }
+        
+        /* ============ FAB BUTTON ============ */
+        .fab { position: fixed; bottom: 1.5rem; right: 1.5rem; width: 55px; height: 55px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 25px rgba(0,0,0,0.3); border: none; font-size: 1.3rem; z-index: 100; transition: all 0.3s; }
         .fab:hover { transform: scale(1.1) rotate(90deg); }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-content { background: white; border-radius: 30px; max-width: 550px; width: 90%; padding: 2rem; max-height: 90vh; overflow-y: auto; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-        .modal-header h3 { font-size: 1.5rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .close-modal { cursor: pointer; font-size: 1.5rem; transition: all 0.3s; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
-        .close-modal:hover { background: #f0f0f0; transform: rotate(90deg); }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #4a5568; }
-        input, textarea, select { width: 100%; padding: 0.8rem 1rem; border: 2px solid #e2e8f0; border-radius: 12px; font-family: inherit; transition: all 0.3s; }
-        input:focus, textarea:focus, select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
-        .upload-area { border: 2px dashed #cbd5e0; border-radius: 20px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.3s; background: #f7fafc; }
-        .upload-area:hover { border-color: #667eea; background: #edf2f7; }
-        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0.8rem; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.3s; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
-        .btn-secondary { background: #a0aec0; color: white; border: none; padding: 0.8rem; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 0.5rem; }
-        .toggle-buttons { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
-        .toggle-btn { flex: 1; padding: 0.6rem; border: none; border-radius: 50px; cursor: pointer; background: #e2e8f0; transition: all 0.3s; font-weight: 500; }
-        .toggle-btn.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
-        .loading { text-align: center; padding: 3rem; color: white; }
-        .spinner { width: 50px; height: 50px; border: 3px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: white; padding: 0.8rem 1.5rem; border-radius: 50px; display: none; z-index: 3000; box-shadow: 0 10px 30px rgba(0,0,0,0.2); font-weight: 500; animation: slideUp 0.3s ease; }
-        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-        .empty-state { text-align: center; padding: 3rem; background: white; border-radius: 30px; color: #a0aec0; }
-        .owner-badge { background: #48bb78; color: white; font-size: 0.7rem; padding: 0.2rem 0.6rem; border-radius: 50px; margin-left: 0.5rem; }
-        .admin-tabs { background: white; border-radius: 20px; padding: 0.5rem; margin-bottom: 2rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .admin-tab { flex: 1; padding: 0.8rem; border: none; border-radius: 15px; cursor: pointer; background: #f7fafc; transition: all 0.3s; font-weight: 600; }
+        
+        /* ============ ADMIN TABS RESPONSIVE ============ */
+        .admin-tabs { background: white; border-radius: 16px; padding: 0.5rem; margin-bottom: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .admin-tab { flex: 1; padding: 0.6rem; border: none; border-radius: 12px; cursor: pointer; background: #f7fafc; transition: all 0.3s; font-weight: 600; font-size: 0.7rem; white-space: nowrap; }
         .admin-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
-        .queue-card { background: white; border-radius: 20px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 4px solid #ed8936; }
+        .queue-card { background: white; border-radius: 16px; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-left: 4px solid #ed8936; }
+        .badge-count { background: #f56565; color: white; border-radius: 50px; padding: 0.15rem 0.5rem; font-size: 0.6rem; margin-left: 0.3rem; }
+        
+        /* ============ MODAL RESPONSIVE ============ */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-content { background: white; border-radius: 24px; max-width: 500px; width: 90%; padding: 1.5rem; max-height: 85vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .modal-header h3 { font-size: 1.2rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .close-modal { cursor: pointer; font-size: 1.3rem; transition: all 0.3s; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .close-modal:hover { background: #f0f0f0; transform: rotate(90deg); }
+        .form-group { margin-bottom: 0.8rem; }
+        .form-group label { display: block; margin-bottom: 0.3rem; font-weight: 500; color: #4a5568; font-size: 0.85rem; }
+        input, textarea, select { width: 100%; padding: 0.7rem; border: 2px solid #e2e8f0; border-radius: 10px; font-family: inherit; transition: all 0.3s; font-size: 0.85rem; }
+        .upload-area { border: 2px dashed #cbd5e0; border-radius: 16px; padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.3s; background: #f7fafc; margin-bottom: 1rem; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 0.7rem; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.3s; font-size: 0.9rem; }
+        
+        /* ============ TOAST & LOADING ============ */
+        .toast { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); background: white; padding: 0.6rem 1.2rem; border-radius: 50px; display: none; z-index: 3000; box-shadow: 0 10px 30px rgba(0,0,0,0.2); font-weight: 500; font-size: 0.85rem; animation: slideUp 0.3s ease; }
+        .loading { text-align: center; padding: 2rem; color: white; }
+        .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+        .empty-state { text-align: center; padding: 2rem; background: white; border-radius: 20px; color: #a0aec0; font-size: 0.9rem; }
+        .owner-badge { background: #48bb78; color: white; font-size: 0.6rem; padding: 0.15rem 0.4rem; border-radius: 50px; margin-left: 0.3rem; }
+        .diff-old { color: #f56565; text-decoration: line-through; font-size: 0.7rem; }
+        .diff-new { color: #48bb78; font-size: 0.7rem; }
+        
+        /* ============ RESPONSIVE BREAKPOINTS ============ */
+        @media (max-width: 768px) {
+            .container { padding: 0.8rem; }
+            .hero h1 { font-size: 1.4rem; }
+            .search-container { flex-direction: column; }
+            .search-input-group { width: 100%; }
+            .filter-group { width: 100%; }
+            .filter-select { width: 100%; }
+            .search-btn { width: 100%; justify-content: center; }
+            .stats-grid { gap: 0.8rem; }
+            .stat-number { font-size: 1.3rem; }
+            .files-grid { grid-template-columns: 1fr; }
+            .admin-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+            .admin-tab { white-space: nowrap; }
+            .file-actions { flex-wrap: wrap; }
+            .download-btn, .edit-btn, .delete-btn, .report-btn { min-width: 70px; font-size: 0.7rem; }
+            .fab { width: 50px; height: 50px; bottom: 1rem; right: 1rem; font-size: 1.2rem; }
+            .modal-content { width: 95%; padding: 1.2rem; }
+        }
+        
+        @media (max-width: 480px) {
+            .navbar { padding: 0.6rem 0.8rem; }
+            .logo { font-size: 1.1rem; }
+            .nav-links a { padding: 0.3rem 0.6rem; font-size: 0.75rem; }
+            .hero h1 { font-size: 1.2rem; }
+            .stat-number { font-size: 1.1rem; }
+            .stat-label { font-size: 0.6rem; }
+            .file-title { font-size: 0.85rem; }
+            .queue-card { padding: 0.8rem; }
+        }
+        
+        @media (max-width: 360px) {
+            .nav-links { gap: 0.3rem; }
+            .nav-links a { padding: 0.25rem 0.5rem; font-size: 0.7rem; }
+            .file-actions { gap: 0.3rem; }
+            .download-btn, .edit-btn, .delete-btn, .report-btn { min-width: 60px; font-size: 0.65rem; padding: 0.4rem; }
+        }
+        
+        /* ============ UTILITY ============ */
+        .owner-badge { background: #48bb78; color: white; font-size: 0.6rem; padding: 0.15rem 0.4rem; border-radius: 50px; margin-left: 0.3rem; white-space: nowrap; }
         .queue-card-edit { border-left-color: #4299e1; }
         .queue-card-delete { border-left-color: #f56565; }
-        .badge-count { background: #f56565; color: white; border-radius: 50px; padding: 0.2rem 0.6rem; font-size: 0.7rem; margin-left: 0.5rem; }
-        .diff-old { color: #f56565; text-decoration: line-through; }
-        .diff-new { color: #48bb78; }
-        @media (max-width: 768px) { .container { padding: 1rem; } .stats-grid { grid-template-columns: repeat(2, 1fr); } .files-grid { grid-template-columns: 1fr; } .fab { width: 55px; height: 55px; bottom: 1rem; right: 1rem; } }
     </style>
 </head>
 <body>
 
 <nav class="navbar">
-    <div class="logo" onclick="loadFiles()"><i class="fas fa-cloud-upload-alt"></i> <a href="index.html">RE-File</a></div>
+    <div class="logo" onclick="loadFiles()"><i class="fas fa-cloud-upload-alt"></i> <a href="javascript:void(0)">RE-File</a></div>
     <div class="nav-links">
         <a onclick="showMyUploads()" id="myUploadsLink" style="display:none;"><i class="fas fa-folder-open"></i> Upload Saya</a>
-        <a onclick="showAdminPanel()" id="adminPanelLink" style="display:none;"><i class="fas fa-shield-alt"></i> Admin Panel</a>
+        <a onclick="showAdminPanel()" id="adminPanelLink" style="display:none;"><i class="fas fa-shield-alt"></i> Admin</a>
         <a onclick="showLoginModal()" id="loginLink" class="btn-login"><i class="fas fa-sign-in-alt"></i> Login</a>
         <a onclick="logout()" id="logoutLink" style="display:none;"><i class="fas fa-user-circle"></i> <span id="usernameDisplay"></span> <i class="fas fa-sign-out-alt"></i></a>
     </div>
@@ -125,7 +177,7 @@
             </div>
             <div class="filter-group">
                 <select class="filter-select" id="categoryFilter" onchange="searchFiles()">
-                    <option value="all">📁 Semua Kategori</option>
+                    <option value="all">📁 Semua</option>
                     <option value="Document">📄 Dokumen</option>
                     <option value="Image">🖼️ Gambar</option>
                     <option value="Video">🎬 Video</option>
@@ -143,10 +195,10 @@
 
     <div id="adminPanel" style="display:none;">
         <div class="admin-tabs">
-            <button class="admin-tab" onclick="showPendingQueue()">📤 Upload Baru <span id="pendingQueueBadge" class="badge-count" style="display:none;">0</span></button>
-            <button class="admin-tab" onclick="showPendingEdits()">✏️ Request Edit <span id="pendingEditBadge" class="badge-count" style="display:none;">0</span></button>
-            <button class="admin-tab" onclick="showPendingDeletes()">🗑️ Request Hapus <span id="pendingDeleteBadge" class="badge-count" style="display:none;">0</span></button>
-            <button class="admin-tab" onclick="showReportsList()">🚩 Laporan <span id="pendingReportBadge" class="badge-count" style="display:none;">0</span></button>
+            <button class="admin-tab" onclick="showPendingQueue()">📤 Upload <span id="pendingQueueBadge" class="badge-count" style="display:none;">0</span></button>
+            <button class="admin-tab" onclick="showPendingEdits()">✏️ Edit <span id="pendingEditBadge" class="badge-count" style="display:none;">0</span></button>
+            <button class="admin-tab" onclick="showPendingDeletes()">🗑️ Hapus <span id="pendingDeleteBadge" class="badge-count" style="display:none;">0</span></button>
+            <button class="admin-tab" onclick="showReportsList()">🚩 Lapor <span id="pendingReportBadge" class="badge-count" style="display:none;">0</span></button>
         </div>
         <div id="adminContent"></div>
     </div>
@@ -154,7 +206,7 @@
     <div id="publicSection">
         <div class="stats-grid">
             <div class="stat-card"><div class="stat-number" id="totalFiles">0</div><div class="stat-label">Total File</div></div>
-            <div class="stat-card"><div class="stat-number" id="totalDownloads">0</div><div class="stat-label">Total Download</div></div>
+            <div class="stat-card"><div class="stat-number" id="totalDownloads">0</div><div class="stat-label">Download</div></div>
             <div class="stat-card"><div class="stat-number" id="totalUsers">0</div><div class="stat-label">Pengguna</div></div>
         </div>
 
@@ -168,7 +220,7 @@
     </div>
 </div>
 
-<!-- Login Modal -->
+<!-- Modals -->
 <div id="loginModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3><i class="fas fa-user-circle"></i> Selamat Datang!</h3><span class="close-modal" onclick="closeModal('loginModal')">&times;</span></div>
@@ -187,23 +239,20 @@
     </div>
 </div>
 
-<!-- Upload Modal -->
 <div id="uploadModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3><i class="fas fa-cloud-upload-alt"></i> Upload File</h3><span class="close-modal" onclick="closeModal('uploadModal')">&times;</span></div>
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-            <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color:#667eea;"></i>
+            <i class="fas fa-cloud-upload-alt" style="font-size: 2.5rem; color:#667eea;"></i>
             <p>Klik untuk pilih file</p>
-            <small style="color:#718096;">Tanpa batasan ukuran! 🚀</small>
+            <small>Tanpa batasan ukuran! 🚀</small>
         </div>
         <input type="file" id="fileInput" style="display:none" onchange="showFileName()">
-        <div id="fileNameDisplay" style="margin:0.5rem 0; text-align:center; font-size:0.85rem; color:#48bb78;"></div>
-        
+        <div id="fileNameDisplay" style="margin:0.5rem 0; text-align:center; font-size:0.8rem; color:#48bb78;"></div>
         <div class="form-group">
             <label><i class="fas fa-heading"></i> Judul File</label>
-            <input type="text" id="fileTitle" placeholder="Masukkan judul file (contoh: Tutorial Node.js)">
+            <input type="text" id="fileTitle" placeholder="Masukkan judul file">
         </div>
-        
         <div class="form-group">
             <label><i class="fas fa-align-left"></i> Deskripsi</label>
             <textarea id="fileDesc" placeholder="Deskripsi file (opsional)" rows="3"></textarea>
@@ -219,15 +268,14 @@
             </select>
         </div>
         <button class="btn-primary" onclick="uploadFile()"><i class="fas fa-paper-plane"></i> Kirim untuk Verifikasi</button>
-        <p style="font-size:0.7rem; text-align:center; margin-top:0.5rem; color:#718096;">File akan diverifikasi oleh admin sebelum dipublikasikan</p>
+        <p style="font-size:0.7rem; text-align:center; margin-top:0.5rem; color:#718096;">File akan diverifikasi oleh admin</p>
     </div>
 </div>
 
-<!-- Edit Modal (untuk request edit ke admin) -->
 <div id="editModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3><i class="fas fa-edit"></i> Edit File</h3><span class="close-modal" onclick="closeModal('editModal')">&times;</span></div>
-        <div id="editFileInfo" style="margin-bottom:1rem; padding:0.5rem; background:#fef5e7; border-radius:10px;"></div>
+        <div id="editFileInfo" style="margin-bottom:1rem; padding:0.5rem; background:#fef5e7; border-radius:10px; font-size:0.85rem;"></div>
         <div class="form-group">
             <label><i class="fas fa-heading"></i> Judul Baru</label>
             <input type="text" id="editTitle" placeholder="Judul file">
@@ -246,12 +294,11 @@
                 <option value="Other">📦 Lainnya</option>
             </select>
         </div>
-        <button class="btn-primary" onclick="submitEditRequest()"><i class="fas fa-paper-plane"></i> Kirim ke Admin untuk Verifikasi</button>
-        <p style="font-size:0.7rem; text-align:center; margin-top:0.5rem; color:#718096;">Perubahan akan diverifikasi oleh admin terlebih dahulu</p>
+        <button class="btn-primary" onclick="submitEditRequest()"><i class="fas fa-paper-plane"></i> Kirim ke Admin</button>
+        <p style="font-size:0.7rem; text-align:center; margin-top:0.5rem; color:#718096;">Perubahan akan diverifikasi admin</p>
     </div>
 </div>
 
-<!-- Report Modal -->
 <div id="reportModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3><i class="fas fa-flag"></i> Laporkan File</h3><span class="close-modal" onclick="closeModal('reportModal')">&times;</span></div>
@@ -288,7 +335,7 @@
                 console.log('🔌 Real-time connected');
                 if (currentUser && currentUser.id) socket.emit('register-user', currentUser.id);
             });
-            socket.on('new-file', (file) => { console.log('📢 New file:', file.original_name); showToast(`📢 File baru: ${file.title || file.original_name} telah ditambahkan!`); loadFiles(); loadStats(); });
+            socket.on('new-file', (file) => { console.log('📢 New file:', file.original_name); showToast(`📢 File baru: ${file.title || file.original_name} ditambahkan!`); loadFiles(); loadStats(); });
             socket.on('file-deleted', (fileId) => { console.log('📢 File deleted:', fileId); showToast(`🗑️ Sebuah file telah dihapus`); loadFiles(); loadStats(); });
             socket.on('file-updated', (data) => { console.log('📢 File updated:', data.id); loadFiles(); });
             socket.on('connect_error', (err) => console.log('Socket error:', err.message));
@@ -551,11 +598,11 @@
         } catch (err) { showToast(err.message, true); }
     }
 
-    // ============ EDIT REQUEST (Verifikasi Admin) ============
+    // ============ EDIT REQUEST ============
     function openEditRequestModal(fileId, currentTitle, currentDescription, currentCategory) {
         currentEditFileId = fileId;
         currentEditFileTitle = currentTitle;
-        document.getElementById('editFileInfo').innerHTML = `<strong>✏️ Edit File</strong><br><small>File: ${currentTitle}<br>Perubahan akan diverifikasi oleh admin terlebih dahulu</small>`;
+        document.getElementById('editFileInfo').innerHTML = `<strong>✏️ Edit File</strong><br><small>File: ${currentTitle}<br>Perubahan akan diverifikasi admin</small>`;
         document.getElementById('editTitle').value = currentTitle;
         document.getElementById('editDescription').value = currentDescription;
         document.getElementById('editCategory').value = currentCategory;
@@ -575,14 +622,14 @@
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.error);
-            showToast('✅ Edit request dikirim ke admin untuk verifikasi!');
+            showToast('✅ Edit request dikirim ke admin!');
             closeModal('editModal');
         } catch (err) { showToast(err.message, true); }
     }
 
-    // ============ DELETE REQUEST (Verifikasi Admin) ============
+    // ============ DELETE REQUEST ============
     async function requestDelete(fileId, fileName) {
-        if (!confirm(`Apakah Anda yakin ingin menghapus file "${fileName}"?\n\nFile akan dihapus setelah disetujui oleh admin.`)) return;
+        if (!confirm(`Apakah Anda yakin ingin menghapus file "${fileName}"?\n\nFile akan dihapus setelah disetujui admin.`)) return;
         try {
             const response = await fetch(API_BASE + `/api/file/delete-request/${fileId}`, {
                 method: 'POST',
@@ -590,7 +637,7 @@
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.error);
-            showToast('✅ Delete request dikirim ke admin untuk verifikasi!');
+            showToast('✅ Delete request dikirim ke admin!');
         } catch (err) { showToast(err.message, true); }
     }
 
@@ -670,55 +717,44 @@
     }
 
     async function showPendingQueue() {
-    try {
-        const data = await apiCall('/api/admin/queue');
-        const container = document.getElementById('adminContent');
-        
-        if (data.queues.length === 0) {
-            container.innerHTML = '<div class="empty-state">✅ Tidak ada file menunggu verifikasi</div>';
-            return;
-        }
-        
-        container.innerHTML = `<div>${data.queues.map(q => `
-            <div class="queue-card">
-                <div><strong>${escapeHtml(q.title || q.original_name)}</strong><br>
-                <small>👤 ${escapeHtml(q.uploader_name)} | 📦 ${formatFileSize(q.file_size)}</small></div>
-                ${q.description ? `<div class="file-description">📝 ${escapeHtml(q.description)}</div>` : ''}
-                <div class="file-actions" style="margin-top:1rem; gap: 0.5rem; display: flex;">
-                    <button class="download-btn" onclick="downloadQueueFile(${q.id})" style="background: #4299e1; flex:1;">
-                        📥 Download (Cek)
-                    </button>
-                    <button class="download-btn" onclick="approveFile(${q.id})" style="flex:1;">✅ Setujui</button>
-                    <button class="delete-btn" onclick="rejectFile(${q.id})" style="flex:1;">❌ Tolak</button>
+        try {
+            const data = await apiCall('/api/admin/queue');
+            const container = document.getElementById('adminContent');
+            if (data.queues.length === 0) { container.innerHTML = '<div class="empty-state">✅ Tidak ada file menunggu verifikasi</div>'; return; }
+            container.innerHTML = `<div>${data.queues.map(q => `
+                <div class="queue-card">
+                    <div><strong>${escapeHtml(q.title || q.original_name)}</strong><br><small>👤 ${escapeHtml(q.uploader_name)} | 📦 ${formatFileSize(q.file_size)}</small></div>
+                    ${q.description ? `<div class="file-description">📝 ${escapeHtml(q.description)}</div>` : ''}
+                    <div class="file-actions" style="margin-top:1rem; gap:0.5rem; display:flex; flex-wrap:wrap;">
+                        <button class="download-btn" onclick="downloadQueueFile(${q.id})" style="background:#4299e1; flex:1;">📥 Download</button>
+                        <button class="download-btn" onclick="approveFile(${q.id})" style="flex:1;">✅ Setujui</button>
+                        <button class="delete-btn" onclick="rejectFile(${q.id})" style="flex:1;">❌ Tolak</button>
+                    </div>
                 </div>
-            </div>
-        `).join('')}</div>`;
-        
-        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-        event.target.classList.add('active');
-    } catch (err) { showToast(err.message, true); }
-}
+            `).join('')}</div>`;
+            document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+            if (event && event.target) event.target.classList.add('active');
+        } catch (err) { showToast(err.message, true); }
+    }
 
-// Tambahkan fungsi ini
-async function downloadQueueFile(queueId) {
-    const url = API_BASE + `/api/admin/queue-download/${queueId}`;
-    console.log('Downloading from:', url);
-    window.open(url, '_blank');
-}
+    async function downloadQueueFile(queueId) {
+        const url = API_BASE + `/api/admin/queue-download/${queueId}`;
+        window.open(url, '_blank');
+    }
 
-async function approveFile(queueId) { try { await apiCall(`/api/admin/approve/${queueId}`, { method: 'POST' }); showToast('✅ File disetujui!'); showPendingQueue(); loadFiles(); loadStats(); } catch (err) { showToast(err.message, true); } }
-async function rejectFile(queueId) { if (!confirm('Tolak file ini?')) return; try { await apiCall(`/api/admin/reject/${queueId}`, { method: 'POST', body: JSON.stringify({ reason: 'Ditolak oleh admin' }) }); showToast('❌ File ditolak'); showPendingQueue(); } catch (err) { showToast(err.message, true); } }
+    async function approveFile(queueId) { try { await apiCall(`/api/admin/approve/${queueId}`, { method: 'POST' }); showToast('✅ File disetujui!'); showPendingQueue(); loadFiles(); loadStats(); } catch (err) { showToast(err.message, true); } }
+    async function rejectFile(queueId) { if (!confirm('Tolak file ini?')) return; try { await apiCall(`/api/admin/reject/${queueId}`, { method: 'POST', body: JSON.stringify({ reason: 'Ditolak oleh admin' }) }); showToast('❌ File ditolak'); showPendingQueue(); } catch (err) { showToast(err.message, true); } }
 
-async function showPendingEdits() {
+    async function showPendingEdits() {
         try { const data = await apiCall('/api/admin/pending-edits'); const container = document.getElementById('adminContent');
         if (data.edits.length === 0) { container.innerHTML = '<div class="empty-state">✏️ Tidak ada request edit</div>'; return; }
         container.innerHTML = `<div>${data.edits.map(edit => `<div class="queue-card queue-card-edit"><div><strong>📝 ${edit.file_title || edit.file_name}</strong></div><div><small>👤 Request oleh: ${edit.requested_by_name}</small></div>
-        <div style="margin-top:0.5rem;"><strong>Perubahan:</strong><div style="background:#f7fafc; padding:0.5rem; margin-top:0.3rem;">
+        <div style="margin-top:0.5rem;"><strong>Perubahan:</strong><div style="background:#f7fafc; padding:0.5rem; margin-top:0.3rem; font-size:0.75rem;">
         <div>Judul: <span class="diff-old">${escapeHtml(edit.current_data.title)}</span> → <span class="diff-new">${escapeHtml(edit.requested_data.title)}</span></div>
         <div>Deskripsi: <span class="diff-old">${escapeHtml(edit.current_data.description.substring(0, 50))}</span> → <span class="diff-new">${escapeHtml(edit.requested_data.description.substring(0, 50))}</span></div>
         <div>Kategori: <span class="diff-old">${edit.current_data.category}</span> → <span class="diff-new">${edit.requested_data.category}</span></div></div></div>
-        <div class="file-actions" style="margin-top:1rem;"><button class="download-btn" onclick="approveEdit('${edit.id}')">✅ Setujui</button><button class="delete-btn" onclick="rejectEdit('${edit.id}')">❌ Tolak</button></div></div>`).join('')}</div>`;
-        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active')); event.target.classList.add('active'); updateAdminBadges();
+        <div class="file-actions" style="margin-top:1rem; gap:0.5rem; display:flex;"><button class="download-btn" onclick="approveEdit('${edit.id}')" style="flex:1;">✅ Setujui</button><button class="delete-btn" onclick="rejectEdit('${edit.id}')" style="flex:1;">❌ Tolak</button></div></div>`).join('')}</div>`;
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active')); if (event && event.target) event.target.classList.add('active'); updateAdminBadges();
         } catch (err) { showToast(err.message, true); } }
 
     async function approveEdit(editId) { try { await apiCall(`/api/admin/approve-edit/${editId}`, { method: 'POST' }); showToast('✅ Edit disetujui!'); showPendingEdits(); loadFiles(); } catch (err) { showToast(err.message, true); } }
@@ -728,16 +764,16 @@ async function showPendingEdits() {
         try { const data = await apiCall('/api/admin/pending-deletes'); const container = document.getElementById('adminContent');
         if (data.deletes.length === 0) { container.innerHTML = '<div class="empty-state">🗑️ Tidak ada request hapus</div>'; return; }
         container.innerHTML = `<div>${data.deletes.map(del => `<div class="queue-card queue-card-delete"><div><strong>📄 ${del.file_title}</strong></div><div><small>👤 Request oleh: ${del.requested_by_name}</small></div>
-        <div class="file-actions" style="margin-top:1rem;"><button class="download-btn" onclick="downloadPendingFile('${del.id}')">📥 Download File (Cek)</button></div>
-        <div class="file-actions" style="margin-top:1rem;"><button class="download-btn" onclick="approveDelete('${del.id}')">✅ Setujui Hapus</button><button class="delete-btn" onclick="rejectDelete('${del.id}')">❌ Tolak</button></div></div>`).join('')}</div>`;
-        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active')); event.target.classList.add('active'); updateAdminBadges();
+        <div class="file-actions" style="margin:0.5rem 0;"><button class="download-btn" onclick="downloadPendingFile('${del.id}')" style="background:#4299e1;">📥 Download File (Cek)</button></div>
+        <div class="file-actions" style="margin-top:0.5rem; gap:0.5rem; display:flex;"><button class="download-btn" onclick="approveDelete('${del.id}')" style="flex:1;">✅ Setujui Hapus</button><button class="delete-btn" onclick="rejectDelete('${del.id}')" style="flex:1;">❌ Tolak</button></div></div>`).join('')}</div>`;
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active')); if (event && event.target) event.target.classList.add('active'); updateAdminBadges();
         } catch (err) { showToast(err.message, true); } }
 
-async function downloadPendingFile(deleteId) {
-    const url = API_BASE + `/api/admin/delete-download/${deleteId}`;
-    console.log('Downloading from:', url);
-    window.open(url, '_blank');
-}
+    async function downloadPendingFile(deleteId) {
+        const url = API_BASE + `/api/admin/delete-download/${deleteId}`;
+        window.open(url, '_blank');
+    }
+    
     async function approveDelete(deleteId) { if (!confirm('Setujui penghapusan file ini?')) return; try { await apiCall(`/api/admin/approve-delete/${deleteId}`, { method: 'POST' }); showToast('✅ File dihapus!'); showPendingDeletes(); loadFiles(); loadStats(); } catch (err) { showToast(err.message, true); } }
     async function rejectDelete(deleteId) { const reason = prompt('Alasan penolakan:'); try { await apiCall(`/api/admin/reject-delete/${deleteId}`, { method: 'POST', body: JSON.stringify({ reason: reason || 'Tidak ada alasan' }) }); showToast('❌ Request hapus ditolak'); showPendingDeletes(); } catch (err) { showToast(err.message, true); } }
 
@@ -745,8 +781,8 @@ async function downloadPendingFile(deleteId) {
         try { const data = await apiCall('/api/admin/reports'); const container = document.getElementById('adminContent');
         if (data.reports.length === 0) { container.innerHTML = '<div class="empty-state">🚩 Tidak ada laporan dari user</div>'; return; }
         container.innerHTML = `<div>${data.reports.map(r => `<div class="queue-card"><div><strong>📄 ${escapeHtml(r.file_name || 'File sudah dihapus')}</strong><br><small>👤 Dilaporkan oleh: ${escapeHtml(r.reporter_name)}</small><br><strong>🚩 Alasan:</strong> ${escapeHtml(r.reason)}</div>
-        <div class="file-actions" style="margin-top:1rem;"><button class="download-btn" onclick="deleteFileFromReport('${r.file_id}', '${r.id}')">🗑️ Hapus File</button><button class="delete-btn" onclick="ignoreReport('${r.id}')">👁️ Abaikan</button></div></div>`).join('')}</div>`;
-        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active')); event.target.classList.add('active'); updateAdminBadges();
+        <div class="file-actions" style="margin-top:1rem; gap:0.5rem; display:flex;"><button class="download-btn" onclick="deleteFileFromReport('${r.file_id}', '${r.id}')" style="flex:1;">🗑️ Hapus File</button><button class="delete-btn" onclick="ignoreReport('${r.id}')" style="flex:1;">👁️ Abaikan</button></div></div>`).join('')}</div>`;
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active')); if (event && event.target) event.target.classList.add('active'); updateAdminBadges();
         } catch (err) { showToast(err.message, true); } }
 
     async function deleteFileFromReport(fileId, reportId) { if (!confirm('Hapus file ini?')) return; try { await apiCall(`/api/admin/delete-file/${fileId}`, { method: 'POST' }); await apiCall(`/api/admin/ignore-report/${reportId}`, { method: 'POST' }); showToast('✅ File dihapus!'); showReportsList(); loadFiles(); } catch (err) { showToast(err.message, true); } }
@@ -757,6 +793,7 @@ async function downloadPendingFile(deleteId) {
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     function showLoginForm() { document.getElementById('loginFormDiv').style.display = 'block'; document.getElementById('registerFormDiv').style.display = 'none'; }
     function showRegisterForm() { document.getElementById('loginFormDiv').style.display = 'none'; document.getElementById('registerFormDiv').style.display = 'block'; }
+    
     window.onclick = (e) => { if (e.target.classList.contains('modal')) e.target.style.display = 'none'; }
 
     // ============ INITIALIZE ============
