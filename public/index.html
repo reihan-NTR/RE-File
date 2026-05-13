@@ -11,13 +11,100 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
         
         /* ============ NAVBAR RESPONSIVE ============ */
-        .navbar { background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); padding: 0.8rem 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .logo { font-size: 1.3rem; font-weight: bold; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; display: flex; align-items: center; gap: 1px; }
-        .logo a { text-decoration: none; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .nav-links { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-        .nav-links a { text-decoration: none; padding: 0.4rem 0.8rem; border-radius: 50px; cursor: pointer; color: #4a5568; transition: all 0.3s; font-weight: 500; font-size: 0.85rem; }
-        .nav-links a:hover { background: #667eea; color: white; transform: translateY(-2px); }
-        .btn-login { background: linear-gradient(135deg, #667eea, #764ba2); color: white !important; box-shadow: 0 2px 5px rgba(102,126,234,0.3); }
+.navbar { 
+    background: rgba(255,255,255,0.98); 
+    backdrop-filter: blur(10px); 
+    padding: 0.8rem 1rem; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    gap: 0.5rem; 
+    position: sticky; 
+    top: 0; 
+    z-index: 1000; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+    flex-wrap: nowrap; /* Mencegah wrap ke bawah */
+}
+
+.logo { 
+    font-size: 1.3rem; 
+    font-weight: bold; 
+    background: linear-gradient(135deg, #667eea, #764ba2); 
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    gap: 0.3rem; 
+    white-space: nowrap; /* Mencegah tulisan RE-File patah */
+}
+
+.logo a { 
+    text-decoration: none; 
+    background: linear-gradient(135deg, #667eea, #764ba2); 
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent; 
+}
+
+.nav-links { 
+    display: flex; 
+    gap: 0.5rem; 
+    align-items: center; 
+    justify-content: flex-end; /* Rata kanan */
+    flex-wrap: nowrap; /* Mencegah wrap ke bawah */
+}
+
+.nav-links a { 
+    text-decoration: none; 
+    padding: 0.4rem 0.8rem; 
+    border-radius: 50px; 
+    cursor: pointer; 
+    color: #4a5568; 
+    transition: all 0.3s; 
+    font-weight: 500; 
+    font-size: 0.8rem; 
+    white-space: nowrap; /* Mencegah teks tombol patah */
+}
+
+.nav-links a:hover { 
+    background: #667eea; 
+    color: white; 
+    transform: translateY(-2px); 
+}
+
+.btn-login { 
+    background: linear-gradient(135deg, #667eea, #764ba2); 
+    color: white !important; 
+    box-shadow: 0 2px 5px rgba(102,126,234,0.3); 
+}
+
+/* Responsive untuk HP kecil */
+@media (max-width: 500px) {
+    .navbar {
+        padding: 0.5rem 0.8rem;
+    }
+    .logo {
+        font-size: 1.1rem;
+    }
+    .nav-links {
+        gap: 0.3rem;
+    }
+    .nav-links a {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.7rem;
+    }
+}
+
+/* Untuk HP yang sangat kecil (360px ke bawah) */
+@media (max-width: 380px) {
+    .logo {
+        font-size: 1rem;
+    }
+    .nav-links a {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.65rem;
+    }
+}
         
         /* ============ CONTAINER ============ */
         .container { max-width: 1400px; margin: 0 auto; padding: 1rem; }
