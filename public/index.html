@@ -12,7 +12,7 @@
         
         /* ============ NAVBAR RESPONSIVE ============ */
         .navbar { background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); padding: 0.8rem 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .logo { font-size: 1.3rem; font-weight: bold; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; display: flex; align-items: center; gap: 0.2rem; }
+        .logo { font-size: 1.3rem; font-weight: bold; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; display: flex; align-items: center; gap: 10px; }
         .logo a { text-decoration: none; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .nav-links { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
         .nav-links a { text-decoration: none; padding: 0.4rem 0.8rem; border-radius: 50px; cursor: pointer; color: #4a5568; transition: all 0.3s; font-weight: 500; font-size: 0.85rem; }
@@ -153,7 +153,7 @@
 <body>
 
 <nav class="navbar">
-    <div class="logo" onclick="loadFiles()"><i class="fas fa-cloud-upload-alt"></i> <a href="javascript:void(0)"><a href="index.html">RE-File</a></a></div>
+    <div class="logo" onclick="loadFiles()"><i class="fas fa-cloud-upload-alt"></i> <a href="javascript:void(0)"><a href="index.html">RE-File</a></div>
     <div class="nav-links">
         <a onclick="showMyUploads()" id="myUploadsLink" style="display:none;"><i class="fas fa-folder-open"></i> Upload Saya</a>
         <a onclick="showAdminPanel()" id="adminPanelLink" style="display:none;"><i class="fas fa-shield-alt"></i> Admin</a>
